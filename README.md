@@ -10,7 +10,7 @@ runs in bash (or zsh), pdfTeX runs once. This program is written in Haskell.
 
 ## Installation
 
-It can be installed using `cabal`.
+It can be installed using `cabal` or `stack`.
 
 ### Using Cabal
 
@@ -18,6 +18,14 @@ It can be installed using `cabal`.
 git clone https://github.com/e0328eric/autotex.git
 cd autotex
 cabal install autotex
+```
+
+### Using Stack
+
+``` bash
+git clone https://github.com/e0328eric/autotex.git
+cd autotex
+stack install
 ```
 
 ## Usage
