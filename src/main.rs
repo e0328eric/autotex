@@ -1,8 +1,8 @@
 extern crate signal;
 mod engines;
 mod error;
-mod utils;
 mod help;
+mod utils;
 
 use std::env;
 use std::path::{Path, PathBuf};
