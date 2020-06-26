@@ -6,26 +6,18 @@
 autotex testfile.tex
 ```
 
-runs in bash (or zsh), pdfTeX runs once. This program is written in Haskell.
+runs in bash (or zsh), pdfTeX runs once. This program is written in Rust.
 
 ## Installation
 
-It can be installed using `cabal` or `stack`.
+It can be installed using `cargo`.
 
-### Using Cabal
-
-``` bash
-git clone https://github.com/e0328eric/autotex.git
-cd autotex
-cabal install autotex
-```
-
-### Using Stack
+### Using Cargo
 
 ``` bash
 git clone https://github.com/e0328eric/autotex.git
 cd autotex
-stack install
+cargo install --path .
 ```
 
 ## Usage
@@ -99,30 +91,3 @@ To do this, make a file `.autotexrc` on your home direcrory and write `.autotexr
 ``` reStructuredText
 pdfview : qpdfview
 ```
-
-### Compile TeX in Nasted Folder
-
-For example, I want to make a Folland real analysis solution with pdfTeX, so I make a directory like this:
-
-```text
-Folland  |--- folland.tex
-		 |--- Chapter  |--- ch1.tex
-		 	       |--- ch2.tex
-		 	       |--- ch3.tex
-		 	       |--- ch4.tex
-		 	       |--- ch5.tex
-```
-
-I should compile `folland.tex` to make a solution. But actually I want to run `autotex` in the `Chapter` folder. In this case, run autotex like
-
-``` bash
-autotex -cd ../folland.tex
-```
-
-if I want to compile once and
-
-``` bash
-autotex -cd -v ../folland.tex
-```
-
-if I want to compile continuously.
