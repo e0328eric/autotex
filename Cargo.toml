@@ -1,0 +1,12 @@
+[package]
+name = "autotex-rust"
+version = "0.1.1"
+authors = ["Sungbae Jeong <almagest0328@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+walkdir = "2.3.1"
+dirs = "3.0.0"
+signal = "0.7.0"
