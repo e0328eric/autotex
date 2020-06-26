@@ -2,6 +2,7 @@ extern crate signal;
 mod engines;
 mod error;
 mod utils;
+mod help;
 
 use std::env;
 use std::path::{Path, PathBuf};
@@ -14,28 +15,35 @@ use signal::Signal::SIGINT;
 use crate::error::AutoTeXErr;
 
 // continuous compile option
-const CONTINUS_COMPILE: &str = "-v";
+const CONTINUS_COMPILE_OPTION: &str = "-v";
+const HELP_OPTION: &str = "--help";
 
 fn main() -> error::Result<()> {
     let mut args = env::args().collect::<Vec<String>>()[1..].to_vec();
     if args.is_empty() {
         return Err(AutoTeXErr::TakeFilesErr);
     }
-    let filename = Path::new(&args.pop().unwrap()).to_path_buf();
-    compile_engine(&filename, &args)
+    if args.contains(&HELP_OPTION.to_string()) {
+        println!("{}", help::HELP_STRING);
+        Ok(())
+    } else {
+        let filename = Path::new(&args.pop().unwrap()).to_path_buf();
+        compile(&filename, &args)
+    }
 }
 
-fn compile_engine(filepath: &PathBuf, options: &Vec<String>) -> error::Result<()> {
+fn compile(filepath: &PathBuf, options: &[String]) -> error::Result<()> {
     let tex_info = utils::get_files_info(&filepath)?;
     let engine = engines::take_engine(
         &options
+            .to_vec()
             .iter()
             .filter(|x| engines::ENGINE_OPTIONS.contains(&x.as_str()))
-            .collect(),
+            .collect::<Vec<_>>(),
     )?;
     // Check whether "-v" option is used.
     // If so, then run tex continuously.
-    if options.contains(&String::from(CONTINUS_COMPILE)) {
+    if options.contains(&CONTINUS_COMPILE_OPTION.to_string()) {
         let mut init_time = utils::take_time(&tex_info)?;
         let curr_dir = env::current_dir()?;
         let trap = Trap::trap(&[SIGINT]);
@@ -43,7 +51,7 @@ fn compile_engine(filepath: &PathBuf, options: &Vec<String>) -> error::Result<()
         utils::run_pdf(&tex_info)?;
         env::set_current_dir(&curr_dir)?;
         println!("Press Ctrl+C to finish the program.");
-        while let None = trap.wait(Instant::now()) {
+        while trap.wait(Instant::now()).is_none() {
             let compare_time = utils::take_time(&tex_info)?;
             if init_time != compare_time {
                 engines::run_engine(&engine, &tex_info)?;

@@ -35,7 +35,7 @@ pub fn get_files_info(filepath: &PathBuf) -> error::Result<TeXFileInfo> {
     let default_dir = Path::new(".").to_path_buf();
     let current_dir = if file_dir == Some(Path::new("")) {
         default_dir
-    } else if let Some(_) = file_dir {
+    } else if file_dir.is_some() {
         file_dir.unwrap().to_path_buf()
     } else {
         return Err(AutoTeXErr::NoFilenameInputErr);
@@ -48,12 +48,8 @@ pub fn get_files_info(filepath: &PathBuf) -> error::Result<TeXFileInfo> {
                 let file_ext = dir.path().extension();
                 if let Some(ext) = file_ext {
                     if TEX_FILES_EXTENSIONS.iter().any(|x| OsStr::new(x) == ext) {
-                        if ext == "bib" {
-                            bibtex_exists = true;
-                        }
-                        if ext == "idx" {
-                            mkindex_exists = true;
-                        }
+                        bibtex_exists = ext == "bib";
+                        mkindex_exists = ext == "idx";
                         filenames.push(dir.into_path());
                     }
                 }
@@ -81,7 +77,7 @@ pub fn take_time(file_info: &TeXFileInfo) -> error::Result<Vec<SystemTime>> {
 }
 
 fn get_pdf_viewer() -> error::Result<PathBuf> {
-    let mut home_dir = if let None = dirs::home_dir() {
+    let mut home_dir = if dirs::home_dir().is_none() {
         return Err(AutoTeXErr::NoneError);
     } else {
         dirs::home_dir().unwrap()

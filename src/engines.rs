@@ -116,12 +116,12 @@ fn run_mkindex(files: &TeXFileInfo) -> error::Result<bool> {
 }
 
 // Take an appropriate TeX engine from an option
-pub fn take_engine(opts: &Vec<&String>) -> error::Result<TeXEngine> {
+pub fn take_engine(opts: &[&String]) -> error::Result<TeXEngine> {
     match opts.len() {
         0 => Ok(TEX_DEFAULT),
         1 => {
             let en = opts[0];
-            if en == &"-la" {
+            if en == "-la" {
                 Ok(LATEX_DEFAULT)
             } else {
                 match ENGINE_OPTIONS.iter().position(|x| x == en) {
