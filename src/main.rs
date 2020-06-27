@@ -44,26 +44,26 @@ fn compile(filepath: &PathBuf, options: &[String]) -> error::Result<()> {
     // Check whether "-v" option is used.
     // If so, then run tex continuously.
     if options.contains(&CONTINUS_COMPILE_OPTION.to_string()) {
-        let mut init_time = utils::take_time(&tex_info)?;
+        let mut init_time = tex_info.take_time()?;
         let curr_dir = env::current_dir()?;
         let trap = Trap::trap(&[SIGINT]);
-        engines::run_engine(&engine, &tex_info)?;
-        utils::run_pdf(&tex_info)?;
+        engine.run_engine(&tex_info)?;
+        tex_info.run_pdf()?;
         env::set_current_dir(&curr_dir)?;
         println!("Press Ctrl+C to finish the program.");
         while trap.wait(Instant::now()).is_none() {
-            let compare_time = utils::take_time(&tex_info)?;
+            let compare_time = tex_info.take_time()?;
             if init_time != compare_time {
-                engines::run_engine(&engine, &tex_info)?;
+                engine.run_engine(&tex_info)?;
                 env::set_current_dir(&curr_dir)?;
-                init_time = utils::take_time(&tex_info)?;
+                init_time = tex_info.take_time()?;
                 println!("Press Ctrl+C to finish the program.");
             }
             thread::sleep(Duration::from_secs(1));
         }
         println!("\nQuitting");
     } else {
-        engines::run_engine(&engine, &tex_info)?;
+        engine.run_engine(&tex_info)?;
     }
     Ok(())
 }

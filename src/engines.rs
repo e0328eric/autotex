@@ -76,20 +76,51 @@ impl ToString for TeXEngine {
     }
 }
 
+impl TeXEngine {
+    // Main function of compiling TeX
+    pub fn run_engine(&self, tex_info: &TeXFileInfo) -> error::Result<()> {
+        let mut mainfile = tex_info.mainfile.clone();
+        mainfile.push(".tex");
+        env::set_current_dir(&tex_info.current_dir)?;
+        quit_if_failed!(compile <- self, &mainfile);
+        if *self < TeXEngine::PdfLaTeX {
+            quit_if_failed!(compile <- self, &mainfile);
+        } else {
+            match (tex_info.bibtex_exists, tex_info.mkindex_exists) {
+                (false, false) => {
+                    quit_if_failed!(compile <- self, &mainfile);
+                }
+                (true, false) => {
+                    quit_if_failed!(compile <- &TeXEngine::BibTeX, &tex_info.mainfile);
+                    quit_if_failed!(compile <- self, &mainfile);
+                    quit_if_failed!(compile <- self, &mainfile);
+                }
+                (false, true) => {
+                    quit_if_failed!(run_mkindex <- &tex_info);
+                    quit_if_failed!(compile <- self, &mainfile);
+                    quit_if_failed!(compile <- self, &mainfile);
+                }
+                (true, true) => {
+                    quit_if_failed!(compile <- &TeXEngine::BibTeX, &tex_info.mainfile);
+                    quit_if_failed!(run_mkindex <- &tex_info);
+                    quit_if_failed!(compile <- self, &mainfile);
+                    quit_if_failed!(compile <- self, &mainfile);
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
 // ==================================
 // Functions
 // ==================================
-fn compile<S: AsRef<OsStr>>(
-    tex: &TeXEngine,
-    filename: &S,
-    //TODO: Later, I will implement indivisual tex options
-    //options: &Vec<String>,
-) -> error::Result<bool> {
+//TODO: Later, I will implement indivisual tex options
+fn compile<S: AsRef<OsStr>>(tex: &TeXEngine, filename: &S) -> error::Result<bool> {
     Ok(Command::new(tex.to_string())
-       .arg(filename)
-       //.args(options)
-       .status()?
-       .success())
+        .arg(filename)
+        .status()?
+        .success())
 }
 
 // TODO: run_mkindex does not run what I expected.
@@ -146,44 +177,6 @@ pub fn take_engine(opts: &[&String]) -> error::Result<TeXEngine> {
             }
         }
     }
-}
-
-// Main function of compiling TeX
-pub fn run_engine(
-    tex: &TeXEngine,
-    tex_info: &TeXFileInfo,
-    //options: &Vec<String>,
-) -> error::Result<()> {
-    let mut mainfile = tex_info.mainfile.clone();
-    mainfile.push(".tex");
-    env::set_current_dir(&tex_info.current_dir)?;
-    quit_if_failed!(compile <- tex, &mainfile);
-    if *tex < TeXEngine::PdfLaTeX {
-        quit_if_failed!(compile <- tex, &mainfile);
-    } else {
-        match (tex_info.bibtex_exists, tex_info.mkindex_exists) {
-            (false, false) => {
-                quit_if_failed!(compile <- tex, &mainfile);
-            }
-            (true, false) => {
-                quit_if_failed!(compile <- &TeXEngine::BibTeX, &tex_info.mainfile);
-                quit_if_failed!(compile <- tex, &mainfile);
-                quit_if_failed!(compile <- tex, &mainfile);
-            }
-            (false, true) => {
-                quit_if_failed!(run_mkindex <- &tex_info);
-                quit_if_failed!(compile <- tex, &mainfile);
-                quit_if_failed!(compile <- tex, &mainfile);
-            }
-            (true, true) => {
-                quit_if_failed!(compile <- &TeXEngine::BibTeX, &tex_info.mainfile);
-                quit_if_failed!(run_mkindex <- &tex_info);
-                quit_if_failed!(compile <- tex, &mainfile);
-                quit_if_failed!(compile <- tex, &mainfile);
-            }
-        }
-    }
-    Ok(())
 }
 
 // Testing

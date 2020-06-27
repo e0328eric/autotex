@@ -18,6 +18,26 @@ pub struct TeXFileInfo {
     pub mkindex_exists: bool,
 }
 
+impl TeXFileInfo {
+    pub fn take_time(&self) -> error::Result<Vec<SystemTime>> {
+        let mut output: Vec<SystemTime> = vec![];
+        let path_lst = self.filenames.clone();
+        for path in path_lst {
+            output.push(path.metadata()?.modified()?);
+        }
+        Ok(output)
+    }
+
+
+    pub fn run_pdf(&self) -> error::Result<()> {
+        let pdf_engine = get_pdf_viewer()?;
+        let mut pdf_name = self.mainfile.clone();
+        pdf_name.push(".pdf");
+        Command::new(pdf_engine).arg(pdf_name).spawn()?;
+        Ok(())
+    }
+}
+
 // TeX relative extensions
 const TEX_FILES_EXTENSIONS: [&str; 4] = ["tex", "bib", "idx", "toc"];
 
@@ -67,15 +87,6 @@ pub fn get_files_info(filepath: &PathBuf) -> error::Result<TeXFileInfo> {
     })
 }
 
-pub fn take_time(file_info: &TeXFileInfo) -> error::Result<Vec<SystemTime>> {
-    let mut output: Vec<SystemTime> = vec![];
-    let path_lst = file_info.filenames.clone();
-    for path in path_lst {
-        output.push(path.metadata()?.modified()?);
-    }
-    Ok(output)
-}
-
 fn get_pdf_viewer() -> error::Result<PathBuf> {
     let mut home_dir = if dirs::home_dir().is_none() {
         return Err(AutoTeXErr::NoneError);
@@ -90,12 +101,4 @@ fn get_pdf_viewer() -> error::Result<PathBuf> {
     } else {
         Ok(Path::new(&contents).to_path_buf())
     }
-}
-
-pub fn run_pdf(tex: &TeXFileInfo) -> error::Result<()> {
-    let pdf_engine = get_pdf_viewer()?;
-    let mut pdf_name = tex.mainfile.clone();
-    pdf_name.push(".pdf");
-    Command::new(pdf_engine).arg(pdf_name).spawn()?;
-    Ok(())
 }
