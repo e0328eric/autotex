@@ -49,6 +49,7 @@ fn compile(filepath: &PathBuf, options: &[String]) -> error::Result<()> {
         let trap = Trap::trap(&[SIGINT]);
         engine.run_engine(&tex_info)?;
         tex_info.run_pdf()?;
+        thread::sleep(Duration::from_secs(1));
         env::set_current_dir(&curr_dir)?;
         println!("Press Ctrl+C to finish the program.");
         while trap.wait(Instant::now()).is_none() {
