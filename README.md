@@ -82,12 +82,18 @@ autotex -lua -v -la testfile.tex
 
 runs exactly same as in the previous example.
 
-#### PDF viewer setting
-
-The default setting of `autotex` is `xdg-open`. However, you can set this with other pdf viewer, for example, `qpdfview` which I use it.
-
-To do this, make a file `.autotexrc` on your home direcrory and write `.autotexrc` like this:
+### v0.2.0 upgrade part
+#### autotex config
+`autotex` can be configurable with yaml file. It must be placed in `~/.config/autotex` and must have name with `config.yaml`.
+The example config is in below:
 
 ``` reStructuredText
-pdfview : qpdfview
+engine:
+  main: pdflatex
+  latex: pdflatex
+pdf: zathura
 ```
+In general, the command `autotex FILENAME` runs pdftex in default. However, if the config file is like in above, it runs pdflatex in default.
+Also, `latex` part determines the default latex engine in which `autotex -la FILENAME` runs.
+`pdf` part gives the default pdf viewer. The default pdf viewer is `xdg-open`.
+
