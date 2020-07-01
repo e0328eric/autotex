@@ -1,8 +1,10 @@
-extern crate dirs;
-
+use std::convert::{TryFrom, TryInto};
 use std::env;
 use std::ffi::OsStr;
+use std::fs;
 use std::process::Command;
+
+use yaml_rust::YamlLoader;
 
 use crate::error::{self, AutoTeXErr};
 use crate::utils::TeXFileInfo;
@@ -27,8 +29,6 @@ pub enum TeXEngine {
 // Constants
 // ==================================
 // Default TeX Engine and its options
-const TEX_DEFAULT: TeXEngine = TeXEngine::PdfTeX;
-const LATEX_DEFAULT: TeXEngine = TeXEngine::PdfLaTeX;
 pub const ENGINE_OPTIONS: [&str; 5] = ["-pdf", "-xe", "-lua", "-plain", "-la"];
 const ENGINES_LST: [TeXEngine; 8] = [
     TeXEngine::PdfTeX,
@@ -72,6 +72,26 @@ impl ToString for TeXEngine {
             *self =>
                 PdfTeX, XeTeX, LuaTeX, TeX, PdfLaTeX,
             XeLaTeX, LuaLaTeX, LaTeX, BibTeX, MakeIndex
+        }
+    }
+}
+
+impl TryFrom<&str> for TeXEngine {
+    type Error = error::AutoTeXErr;
+    fn try_from(val: &str) -> error::Result<Self> {
+        use TeXEngine::*;
+        match val {
+            "pdftex" => Ok(PdfTeX),
+            "xetex" => Ok(XeTeX),
+            "luatex" => Ok(LuaTeX),
+            "tex" => Ok(TeX),
+            "pdflatex" => Ok(PdfLaTeX),
+            "xelatex" => Ok(XeLaTeX),
+            "lualatex" => Ok(LuaLaTeX),
+            "latex" => Ok(LaTeX),
+            "bibtex" => Ok(BibTeX),
+            "makeindex" => Ok(MakeIndex),
+            _ => Err(AutoTeXErr::ParseErr),
         }
     }
 }
@@ -148,12 +168,26 @@ fn run_mkindex(files: &TeXFileInfo) -> error::Result<bool> {
 
 // Take an appropriate TeX engine from an option
 pub fn take_engine(opts: &[&String]) -> error::Result<TeXEngine> {
+    let mut dir = dirs::config_dir().unwrap();
+    dir.push("autotex/config.yaml");
+    let contents = fs::read_to_string(dir).unwrap();
+    let doc = &YamlLoader::load_from_str(&contents).unwrap()[0];
+    let main_engine = if doc["engine"]["main"].is_badvalue() {
+        "pdftex"
+    } else {
+        doc["engine"]["main"].as_str().unwrap()
+    };
+    let main_latex_engine = if doc["engine"]["latex"].is_badvalue() {
+        "pdflatex"
+    } else {
+        doc["engine"]["latex"].as_str().unwrap()
+    };
     match opts.len() {
-        0 => Ok(TEX_DEFAULT),
+        0 => Ok(main_engine.try_into()?),
         1 => {
             let en = opts[0];
             if en == "-la" {
-                Ok(LATEX_DEFAULT)
+                Ok(main_latex_engine.try_into()?)
             } else {
                 match ENGINE_OPTIONS.iter().position(|x| x == en) {
                     Some(n) => Ok((&ENGINES_LST[n]).clone()),
@@ -183,11 +217,22 @@ pub fn take_engine(opts: &[&String]) -> error::Result<TeXEngine> {
 #[cfg(test)]
 mod test {
     use super::*;
+    use std::fs;
 
     #[test]
     fn tostring_texengine() {
         assert_eq!("pdftex", TeXEngine::PdfTeX.to_string());
         assert_eq!("latex", TeXEngine::LaTeX.to_string());
         assert_eq!("makeindex", TeXEngine::MakeIndex.to_string());
+    }
+
+    #[test]
+    fn parse_yaml_in_config() {
+        let mut dir = dirs::config_dir().unwrap();
+        dir.push("autotex/config.yaml");
+        let cont = fs::read_to_string(dir).unwrap();
+        let doc = &YamlLoader::load_from_str(&cont).unwrap()[0];
+        let main_engine = doc["engine"]["main"].as_str().unwrap();
+        println!("{:?}", main_engine);
     }
 }

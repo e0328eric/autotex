@@ -1,6 +1,6 @@
 [package]
 name = "autotex"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["Sungbae Jeong <almagest0328@gmail.com>"]
 edition = "2018"
 
@@ -10,3 +10,4 @@ edition = "2018"
 walkdir = "2.3.1"
 dirs = "3.0.0"
 signal = "0.7.0"
+yaml-rust = "0.4.4"

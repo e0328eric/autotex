@@ -1,4 +1,8 @@
+extern crate dirs;
 extern crate signal;
+extern crate walkdir;
+extern crate yaml_rust;
+
 mod engines;
 mod error;
 mod help;

@@ -1,10 +1,14 @@
 use std::fmt;
 use std::io;
 
+use yaml_rust::scanner::ScanError;
+
 #[derive(Debug)]
 pub enum AutoTeXErr {
     IOErr(io::Error),
+    ScanErr(ScanError),
     NoneError,
+    ParseErr,
     NoFilenameInputErr,
     TakeFilesErr,
     InvalidOptionErr,
@@ -17,7 +21,9 @@ impl fmt::Display for AutoTeXErr {
         use AutoTeXErr::*;
         match *self {
             IOErr(ref e) => e.fmt(f),
+            ScanErr(ref e) => e.fmt(f),
             NoneError => write!(f, "NoneError"),
+            ParseErr => write!(f, "Cannot parse engine from string!"),
             NoFilenameInputErr => write!(f, "There is no filename to compile!"),
             TakeFilesErr => write!(f, "Cannot make a list of tex relative files!"),
             InvalidOptionErr => write!(f, "No tex option is used!"),
@@ -30,6 +36,12 @@ impl fmt::Display for AutoTeXErr {
 impl From<io::Error> for AutoTeXErr {
     fn from(err: io::Error) -> AutoTeXErr {
         AutoTeXErr::IOErr(err)
+    }
+}
+
+impl From<ScanError> for AutoTeXErr {
+    fn from(err: ScanError) -> AutoTeXErr {
+        AutoTeXErr::ScanErr(err)
     }
 }
 

@@ -1,10 +1,10 @@
-extern crate walkdir;
-
 use std::ffi::{OsStr, OsString};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::SystemTime;
+
+use yaml_rust::YamlLoader;
 
 use crate::error::{self, AutoTeXErr};
 
@@ -27,7 +27,6 @@ impl TeXFileInfo {
         }
         Ok(output)
     }
-
 
     pub fn run_pdf(&self) -> error::Result<()> {
         let pdf_engine = get_pdf_viewer()?;
@@ -52,9 +51,8 @@ pub fn get_files_info(filepath: &PathBuf) -> error::Result<TeXFileInfo> {
         return Err(AutoTeXErr::NoFilenameInputErr);
     };
     let file_dir = filepath.ancestors().nth(1);
-    let default_dir = Path::new(".").to_path_buf();
     let current_dir = if file_dir == Some(Path::new("")) {
-        default_dir
+        Path::new(".").to_path_buf()
     } else if file_dir.is_some() {
         file_dir.unwrap().to_path_buf()
     } else {
@@ -88,17 +86,33 @@ pub fn get_files_info(filepath: &PathBuf) -> error::Result<TeXFileInfo> {
 }
 
 fn get_pdf_viewer() -> error::Result<PathBuf> {
-    let mut home_dir = if dirs::home_dir().is_none() {
+    let mut config_dir = if dirs::config_dir().is_none() {
         return Err(AutoTeXErr::NoneError);
     } else {
-        dirs::home_dir().unwrap()
+        dirs::config_dir().unwrap()
     };
-    home_dir.push(".autotexrc");
-    let mut contents = fs::read_to_string(home_dir)?;
-    contents.pop();
-    if contents.is_empty() {
+    config_dir.push("autotex/config.yaml");
+    let contents = fs::read_to_string(config_dir)?;
+    let doc = &YamlLoader::load_from_str(&contents)?[0];
+    if doc["pdf"].is_badvalue() {
         Ok(Path::new("xdg-open").to_path_buf())
     } else {
-        Ok(Path::new(&contents).to_path_buf())
+        let pdf_view = doc["pdf"].as_str().unwrap();
+        Ok(Path::new(pdf_view).to_path_buf())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn parse_yaml_in_config() {
+        let mut dir = dirs::config_dir().unwrap();
+        dir.push("autotex/config.yaml");
+        let cont = fs::read_to_string(dir).unwrap();
+        let doc = &YamlLoader::load_from_str(&cont).unwrap()[0];
+        let pdf_view = doc["pdf"].as_str().unwrap();
+        println!("{:?}", pdf_view);
     }
 }
