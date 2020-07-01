@@ -170,17 +170,18 @@ fn run_mkindex(files: &TeXFileInfo) -> error::Result<bool> {
 pub fn take_engine(opts: &[&String]) -> error::Result<TeXEngine> {
     let mut dir = dirs::config_dir().unwrap();
     dir.push("autotex/config.yaml");
-    let contents = fs::read_to_string(dir).unwrap();
-    let doc = &YamlLoader::load_from_str(&contents).unwrap()[0];
-    let main_engine = if doc["engine"]["main"].is_badvalue() {
+    let contents = fs::read_to_string(dir).unwrap_or(String::new());
+    let docs = YamlLoader::load_from_str(&contents)?;
+    let doc = docs.get(0);
+    let main_engine = if doc.is_none() || doc.unwrap()["engine"]["main"].is_badvalue() {
         "pdftex"
     } else {
-        doc["engine"]["main"].as_str().unwrap()
+        doc.unwrap()["engine"]["main"].as_str().unwrap()
     };
-    let main_latex_engine = if doc["engine"]["latex"].is_badvalue() {
+    let main_latex_engine = if doc.is_none() || doc.unwrap()["engine"]["latex"].is_badvalue() {
         "pdflatex"
     } else {
-        doc["engine"]["latex"].as_str().unwrap()
+        doc.unwrap()["engine"]["latex"].as_str().unwrap()
     };
     match opts.len() {
         0 => Ok(main_engine.try_into()?),
