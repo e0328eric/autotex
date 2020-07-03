@@ -1,4 +1,3 @@
-use std::convert::{TryFrom, TryInto};
 use std::env;
 use std::ffi::OsStr;
 use std::fs;
@@ -11,18 +10,10 @@ use crate::utils::TeXFileInfo;
 
 // TeX engine enum
 // Convert engine options to this enum so that compile TeX properly
-#[derive(PartialEq, PartialOrd, Clone)]
-pub enum TeXEngine {
-    PdfTeX,
-    XeTeX,
-    LuaTeX,
-    TeX,
-    PdfLaTeX,
-    XeLaTeX,
-    LuaLaTeX,
-    LaTeX,
-    BibTeX,
-    MakeIndex,
+#[derive(Clone)]
+pub struct TeXEngine {
+    engine: String,
+    is_tex: bool,
 }
 
 // ==================================
@@ -30,68 +21,65 @@ pub enum TeXEngine {
 // ==================================
 // Default TeX Engine and its options
 pub const ENGINE_OPTIONS: [&str; 5] = ["-pdf", "-xe", "-lua", "-plain", "-la"];
-const ENGINES_LST: [TeXEngine; 8] = [
-    TeXEngine::PdfTeX,
-    TeXEngine::XeTeX,
-    TeXEngine::LuaTeX,
-    TeXEngine::TeX,
-    TeXEngine::PdfLaTeX,
-    TeXEngine::XeLaTeX,
-    TeXEngine::LuaLaTeX,
-    TeXEngine::LaTeX,
+const ENGINES_LST: [&str; 8] = [
+    "pdftex", "xetex", "luatex", "tex", "pdflatex", "xelatex", "lualatex", "latex",
 ];
 
 // ==================================
 // Macros
 // ==================================
-
-macro_rules! impl_string {
-    ($s:expr => $($e: pat),*) => {
-        match $s {
-            $(
-                $e => stringify!($e).to_lowercase(),
-            )*
-        }
+macro_rules! quit_if_failed {
+    ($e: expr; $($es: expr),*) => {
+        if !$e.compile($($es,)*)? { return Ok(()); }
     }
 }
 
-macro_rules! quit_if_failed {
-    ($i: ident <- $($e: expr),*) => {
-        if !$i($($e,)*)? { return Ok(()); }
-    }
+// ==================================
+// Trait
+// ==================================
+trait Compilable {
+    //TODO: Later, I will implement indivisual tex options
+    fn compile<S: AsRef<OsStr>>(&self, filename: &S) -> error::Result<bool>;
 }
 
 // ==================================
 // Implementations
 // ==================================
-// Implement ToString trait on a TeXEngine enum
-impl ToString for TeXEngine {
-    fn to_string(&self) -> String {
-        use TeXEngine::*;
-        impl_string! {
-            *self =>
-                PdfTeX, XeTeX, LuaTeX, TeX, PdfLaTeX,
-            XeLaTeX, LuaLaTeX, LaTeX, BibTeX, MakeIndex
-        }
+// Implementation of Compilable trait for several types
+impl Compilable for &str {
+    fn compile<S: AsRef<OsStr>>(&self, filename: &S) -> error::Result<bool> {
+        Ok(Command::new(self.to_string())
+            .arg(filename)
+            .status()?
+            .success())
     }
 }
 
-impl TryFrom<&str> for TeXEngine {
-    type Error = error::AutoTeXErr;
-    fn try_from(val: &str) -> error::Result<Self> {
-        use TeXEngine::*;
-        match val {
-            "pdftex" => Ok(PdfTeX),
-            "xetex" => Ok(XeTeX),
-            "luatex" => Ok(LuaTeX),
-            "tex" => Ok(TeX),
-            "pdflatex" => Ok(PdfLaTeX),
-            "xelatex" => Ok(XeLaTeX),
-            "lualatex" => Ok(LuaLaTeX),
-            "latex" => Ok(LaTeX),
-            "bibtex" => Ok(BibTeX),
-            "makeindex" => Ok(MakeIndex),
-            _ => Err(AutoTeXErr::ParseErr),
+impl Compilable for TeXEngine {
+    fn compile<S: AsRef<OsStr>>(&self, filename: &S) -> error::Result<bool> {
+        Ok(Command::new(&self.engine).arg(filename).status()?.success())
+    }
+}
+
+impl Compilable for TeXFileInfo {
+    fn compile<S: AsRef<OsStr>>(&self, _filename: &S) -> error::Result<bool> {
+        let only_idx: Vec<Option<&OsStr>> = self
+            .filenames
+            .iter()
+            .filter(|x| x.extension() == Some(OsStr::new("idx")))
+            .map(|x| x.file_name())
+            .collect();
+        if only_idx.is_empty() {
+            Ok(true)
+        } else {
+            let mut status: Vec<bool> = vec![];
+            for file in only_idx {
+                match file {
+                    None => return Err(AutoTeXErr::NoneError),
+                    Some(ref f) => status.push("makeindex".compile(f)?),
+                }
+            }
+            Ok(status.iter().all(|x| *x))
         }
     }
 }
@@ -102,29 +90,29 @@ impl TeXEngine {
         let mut mainfile = tex_info.mainfile.clone();
         mainfile.push(".tex");
         env::set_current_dir(&tex_info.current_dir)?;
-        quit_if_failed!(compile <- self, &mainfile);
-        if *self < TeXEngine::PdfLaTeX {
-            quit_if_failed!(compile <- self, &mainfile);
+        quit_if_failed!(self; &mainfile);
+        if self.is_tex {
+            quit_if_failed!(self; &mainfile);
         } else {
             match (tex_info.bibtex_exists, tex_info.mkindex_exists) {
                 (false, false) => {
-                    quit_if_failed!(compile <- self, &mainfile);
+                    quit_if_failed!(self; &mainfile);
                 }
                 (true, false) => {
-                    quit_if_failed!(compile <- &TeXEngine::BibTeX, &tex_info.mainfile);
-                    quit_if_failed!(compile <- self, &mainfile);
-                    quit_if_failed!(compile <- self, &mainfile);
+                    quit_if_failed!("bibtex"; &tex_info.mainfile);
+                    quit_if_failed!(self; &mainfile);
+                    quit_if_failed!(self; &mainfile);
                 }
                 (false, true) => {
-                    quit_if_failed!(run_mkindex <- &tex_info);
-                    quit_if_failed!(compile <- self, &mainfile);
-                    quit_if_failed!(compile <- self, &mainfile);
+                    quit_if_failed!(&tex_info; &"");
+                    quit_if_failed!(self; &mainfile);
+                    quit_if_failed!(self; &mainfile);
                 }
                 (true, true) => {
-                    quit_if_failed!(compile <- &TeXEngine::BibTeX, &tex_info.mainfile);
-                    quit_if_failed!(run_mkindex <- &tex_info);
-                    quit_if_failed!(compile <- self, &mainfile);
-                    quit_if_failed!(compile <- self, &mainfile);
+                    quit_if_failed!("bibtex"; &tex_info.mainfile);
+                    quit_if_failed!(&tex_info; &"");
+                    quit_if_failed!(self; &mainfile);
+                    quit_if_failed!(self; &mainfile);
                 }
             }
         }
@@ -135,39 +123,8 @@ impl TeXEngine {
 // ==================================
 // Functions
 // ==================================
-//TODO: Later, I will implement indivisual tex options
-fn compile<S: AsRef<OsStr>>(tex: &TeXEngine, filename: &S) -> error::Result<bool> {
-    Ok(Command::new(tex.to_string())
-        .arg(filename)
-        .status()?
-        .success())
-}
-
-// TODO: run_mkindex does not run what I expected.
-// I will modify it later soon.
-fn run_mkindex(files: &TeXFileInfo) -> error::Result<bool> {
-    let only_idx: Vec<Option<&OsStr>> = files
-        .filenames
-        .iter()
-        .filter(|x| x.extension() == Some(OsStr::new("idx")))
-        .map(|x| x.file_name())
-        .collect();
-    if only_idx.is_empty() {
-        Ok(true)
-    } else {
-        let mut status: Vec<bool> = vec![];
-        for file in only_idx {
-            match file {
-                None => return Err(AutoTeXErr::NoneError),
-                Some(ref f) => status.push(compile(&TeXEngine::MakeIndex, f)?),
-            }
-        }
-        Ok(status.iter().all(|x| *x))
-    }
-}
-
-// Take an appropriate TeX engine from an option
-pub fn take_engine(opts: &[&String]) -> error::Result<TeXEngine> {
+// Read a config file
+fn read_config() -> error::Result<(String, String)> {
     let mut dir = dirs::config_dir().unwrap();
     dir.push("autotex/config.yaml");
     let contents = fs::read_to_string(dir).unwrap_or(String::new());
@@ -183,15 +140,29 @@ pub fn take_engine(opts: &[&String]) -> error::Result<TeXEngine> {
     } else {
         doc.unwrap()["engine"]["latex"].as_str().unwrap()
     };
+    Ok((main_engine.to_string(), main_latex_engine.to_string()))
+}
+
+// Take an appropriate TeX engine from an option
+pub fn take_engine(opts: &[&String]) -> error::Result<TeXEngine> {
     match opts.len() {
-        0 => Ok(main_engine.try_into()?),
+        0 => Ok(TeXEngine {
+            engine: read_config()?.0,
+            is_tex: true,
+        }),
         1 => {
             let en = opts[0];
             if en == "-la" {
-                Ok(main_latex_engine.try_into()?)
+                Ok(TeXEngine {
+                    engine: read_config()?.1,
+                    is_tex: false,
+                })
             } else {
-                match ENGINE_OPTIONS.iter().position(|x| x == en) {
-                    Some(n) => Ok((&ENGINES_LST[n]).clone()),
+                match ENGINE_OPTIONS.iter().position(|&x| x == en) {
+                    Some(n) => Ok(TeXEngine {
+                        engine: (&ENGINES_LST[n]).to_string(),
+                        is_tex: true,
+                    }),
                     None => Err(AutoTeXErr::InvalidOptionErr),
                 }
             }
@@ -202,7 +173,10 @@ pub fn take_engine(opts: &[&String]) -> error::Result<TeXEngine> {
             } else if opts.contains(&&String::from("-la")) {
                 match opts.iter().find(|&x| x != &"-la") {
                     Some(en) => match ENGINE_OPTIONS.iter().position(|x| x == en) {
-                        Some(n) => Ok((&ENGINES_LST[n + 4]).clone()),
+                        Some(n) => Ok(TeXEngine {
+                            engine: (&ENGINES_LST[n + 4]).to_string(),
+                            is_tex: false,
+                        }),
                         None => Err(AutoTeXErr::InvalidOptionErr),
                     },
                     None => Err(AutoTeXErr::NoneError),
@@ -219,13 +193,6 @@ pub fn take_engine(opts: &[&String]) -> error::Result<TeXEngine> {
 mod test {
     use super::*;
     use std::fs;
-
-    #[test]
-    fn tostring_texengine() {
-        assert_eq!("pdftex", TeXEngine::PdfTeX.to_string());
-        assert_eq!("latex", TeXEngine::LaTeX.to_string());
-        assert_eq!("makeindex", TeXEngine::MakeIndex.to_string());
-    }
 
     #[test]
     fn parse_yaml_in_config() {
