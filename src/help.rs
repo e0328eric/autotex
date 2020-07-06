@@ -1,5 +1,5 @@
 // The help string
-// This will displayed when the option "--help"
+// This will displayed when the option "--help" is used
 pub const HELP_STRING: &str = "Usage:\n
 autotex [-v] [-la] [-pdf, -plain, -xe, -lua] FILENAME\n
 Options:\n

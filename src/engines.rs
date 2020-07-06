@@ -8,11 +8,13 @@ use yaml_rust::YamlLoader;
 use crate::error::{self, AutoTeXErr};
 use crate::utils::TeXFileInfo;
 
-// TeX engine enum
-// Convert engine options to this enum so that compile TeX properly
-#[derive(Clone)]
-pub struct TeXEngine {
-    engine: String,
+// ==================================
+// Structure
+// ==================================
+// Store TeX engine and some bool
+// so that the program detect whether compile engine is TeX or LaTeX based
+pub struct TeXEngine<'a> {
+    engine: &'a str,
     is_tex: bool,
 }
 
@@ -55,7 +57,7 @@ impl Compilable for &str {
     }
 }
 
-impl Compilable for TeXEngine {
+impl Compilable for TeXEngine<'_> {
     fn compile<S: AsRef<OsStr>>(&self, filename: &S) -> error::Result<bool> {
         Ok(Command::new(&self.engine).arg(filename).status()?.success())
     }
@@ -84,7 +86,7 @@ impl Compilable for TeXFileInfo {
     }
 }
 
-impl TeXEngine {
+impl TeXEngine<'_> {
     // Main function of compiling TeX
     pub fn run_engine(&self, tex_info: &TeXFileInfo) -> error::Result<()> {
         let mut mainfile = tex_info.mainfile.clone();
@@ -124,43 +126,45 @@ impl TeXEngine {
 // Functions
 // ==================================
 // Read a config file
-fn read_config() -> error::Result<(String, String)> {
+fn read_config() -> error::Result<(usize, usize)> {
     let mut dir = dirs::config_dir().unwrap();
     dir.push("autotex/config.yaml");
     let contents = fs::read_to_string(dir).unwrap_or(String::new());
     let docs = YamlLoader::load_from_str(&contents)?;
     let doc = docs.get(0);
     let main_engine = if doc.is_none() || doc.unwrap()["engine"]["main"].is_badvalue() {
-        "pdftex"
+        0
     } else {
-        doc.unwrap()["engine"]["main"].as_str().unwrap()
+        let engine = doc.unwrap()["engine"]["main"].as_str().unwrap();
+        ENGINES_LST.iter().position(|&x| x == engine).unwrap()
     };
     let main_latex_engine = if doc.is_none() || doc.unwrap()["engine"]["latex"].is_badvalue() {
-        "pdflatex"
+        4
     } else {
-        doc.unwrap()["engine"]["latex"].as_str().unwrap()
+        let engine = doc.unwrap()["engine"]["latex"].as_str().unwrap();
+        ENGINES_LST.iter().position(|&x| x == engine).unwrap()
     };
-    Ok((main_engine.to_string(), main_latex_engine.to_string()))
+    Ok((main_engine, main_latex_engine))
 }
 
 // Take an appropriate TeX engine from an option
-pub fn take_engine(opts: &[&String]) -> error::Result<TeXEngine> {
+pub fn take_engine<'a>(opts: &'a [&'a String]) -> error::Result<TeXEngine<'a>> {
     match opts.len() {
         0 => Ok(TeXEngine {
-            engine: read_config()?.0,
+            engine: ENGINES_LST[read_config()?.0],
             is_tex: true,
         }),
         1 => {
             let en = opts[0];
             if en == "-la" {
                 Ok(TeXEngine {
-                    engine: read_config()?.1,
+                    engine: ENGINES_LST[read_config()?.1],
                     is_tex: false,
                 })
             } else {
                 match ENGINE_OPTIONS.iter().position(|&x| x == en) {
                     Some(n) => Ok(TeXEngine {
-                        engine: (&ENGINES_LST[n]).to_string(),
+                        engine: &ENGINES_LST[n],
                         is_tex: true,
                     }),
                     None => Err(AutoTeXErr::InvalidOptionErr),
@@ -174,7 +178,7 @@ pub fn take_engine(opts: &[&String]) -> error::Result<TeXEngine> {
                 match opts.iter().find(|&x| x != &"-la") {
                     Some(en) => match ENGINE_OPTIONS.iter().position(|x| x == en) {
                         Some(n) => Ok(TeXEngine {
-                            engine: (&ENGINES_LST[n + 4]).to_string(),
+                            engine: &ENGINES_LST[n + 4],
                             is_tex: false,
                         }),
                         None => Err(AutoTeXErr::InvalidOptionErr),

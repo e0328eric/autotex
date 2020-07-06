@@ -8,6 +8,9 @@ use yaml_rust::YamlLoader;
 
 use crate::error::{self, AutoTeXErr};
 
+// ============================
+// Structure
+// ============================
 // A container of files info
 #[derive(Debug)]
 pub struct TeXFileInfo {
@@ -18,6 +21,15 @@ pub struct TeXFileInfo {
     pub mkindex_exists: bool,
 }
 
+// ============================
+// Constants
+// ============================
+// TeX relative extensions
+const TEX_FILES_EXTENSIONS: [&str; 4] = ["tex", "bib", "idx", "toc"];
+
+// ============================
+// Implementation
+// ============================
 impl TeXFileInfo {
     pub fn take_time(&self) -> error::Result<Vec<SystemTime>> {
         let mut output: Vec<SystemTime> = vec![];
@@ -37,9 +49,9 @@ impl TeXFileInfo {
     }
 }
 
-// TeX relative extensions
-const TEX_FILES_EXTENSIONS: [&str; 4] = ["tex", "bib", "idx", "toc"];
-
+// ============================
+// Functions
+// ============================
 // Take all tex related files in the current directory
 pub fn get_files_info(filepath: &PathBuf) -> error::Result<TeXFileInfo> {
     let mut filenames: Vec<PathBuf> = Vec::new();
@@ -58,8 +70,7 @@ pub fn get_files_info(filepath: &PathBuf) -> error::Result<TeXFileInfo> {
     } else {
         return Err(AutoTeXErr::NoFilenameInputErr);
     };
-    let iter = walkdir::WalkDir::new(&current_dir).into_iter();
-    for path in iter {
+    for path in walkdir::WalkDir::new(&current_dir) {
         match path {
             Ok(dir) => {
                 // Filter out directories and files not related with TeX
@@ -70,6 +81,8 @@ pub fn get_files_info(filepath: &PathBuf) -> error::Result<TeXFileInfo> {
                         mkindex_exists = ext == "idx";
                         filenames.push(dir.into_path());
                     }
+                } else {
+                    return Err(AutoTeXErr::TakeFilesErr);
                 }
             }
             Err(_) => return Err(AutoTeXErr::TakeFilesErr),

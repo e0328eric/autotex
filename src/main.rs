@@ -38,13 +38,11 @@ fn main() -> error::Result<()> {
 
 fn compile(filepath: &PathBuf, options: &[String]) -> error::Result<()> {
     let tex_info = utils::get_files_info(&filepath)?;
-    let engine = engines::take_engine(
-        &options
-            .to_vec()
-            .iter()
-            .filter(|x| engines::ENGINE_OPTIONS.contains(&x.as_str()))
-            .collect::<Vec<_>>(),
-    )?;
+    let engines = &options
+        .iter()
+        .filter(|x| engines::ENGINE_OPTIONS.contains(&x.as_str()))
+        .collect::<Vec<_>>();
+    let engine = engines::take_engine(&engines)?;
     // Check whether "-v" option is used.
     // If so, then run tex continuously.
     if options.contains(&CONTINUS_COMPILE_OPTION.to_string()) {
