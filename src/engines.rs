@@ -13,6 +13,7 @@ use crate::utils::TeXFileInfo;
 // ==================================
 // Store TeX engine and some bool
 // so that the program detect whether compile engine is TeX or LaTeX based
+#[derive(Debug)]
 pub struct TeXEngine<'a> {
     engine: &'a str,
     is_tex: bool,
@@ -50,10 +51,7 @@ trait Compilable {
 // Implementation of Compilable trait for several types
 impl Compilable for &str {
     fn compile<S: AsRef<OsStr>>(&self, filename: &S) -> error::Result<bool> {
-        Ok(Command::new(self.to_string())
-            .arg(filename)
-            .status()?
-            .success())
+        Ok(Command::new(self).arg(filename).status()?.success())
     }
 }
 
@@ -129,37 +127,46 @@ impl TeXEngine<'_> {
 fn read_config() -> error::Result<(usize, usize)> {
     let mut dir = dirs::config_dir().unwrap();
     dir.push("autotex/config.yaml");
-    let contents = fs::read_to_string(dir).unwrap_or(String::new());
+    let contents = fs::read_to_string(dir).unwrap_or_default();
     let docs = YamlLoader::load_from_str(&contents)?;
     let doc = docs.get(0);
-    let main_engine = if doc.is_none() || doc.unwrap()["engine"]["main"].is_badvalue() {
+    let main_engine = if let Some(d) = doc {
+        if d["engine"]["main"].is_badvalue() {
+            0
+        } else {
+            let engine = d["engine"]["main"].as_str().unwrap();
+            ENGINES_LST.iter().position(|&x| x == engine).unwrap()
+        }
+    } else {
         0
-    } else {
-        let engine = doc.unwrap()["engine"]["main"].as_str().unwrap();
-        ENGINES_LST.iter().position(|&x| x == engine).unwrap()
     };
-    let main_latex_engine = if doc.is_none() || doc.unwrap()["engine"]["latex"].is_badvalue() {
-        4
+    let main_latex_engine = if let Some(d) = doc {
+        if d["engine"]["latex"].is_badvalue() {
+            4
+        } else {
+            let engine = d["engine"]["latex"].as_str().unwrap();
+            ENGINES_LST.iter().position(|&x| x == engine).unwrap()
+        }
     } else {
-        let engine = doc.unwrap()["engine"]["latex"].as_str().unwrap();
-        ENGINES_LST.iter().position(|&x| x == engine).unwrap()
+        4
     };
     Ok((main_engine, main_latex_engine))
 }
 
 // Take an appropriate TeX engine from an option
 pub fn take_engine<'a>(opts: &'a [&'a String]) -> error::Result<TeXEngine<'a>> {
+    let default = read_config()?;
     match opts.len() {
         0 => Ok(TeXEngine {
-            engine: ENGINES_LST[read_config()?.0],
-            is_tex: true,
+            engine: ENGINES_LST[default.0],
+            is_tex: default.0 < 4,
         }),
         1 => {
             let en = opts[0];
             if en == "-la" {
                 Ok(TeXEngine {
-                    engine: ENGINES_LST[read_config()?.1],
-                    is_tex: false,
+                    engine: ENGINES_LST[default.1],
+                    is_tex: default.1 < 4,
                 })
             } else {
                 match ENGINE_OPTIONS.iter().position(|&x| x == en) {

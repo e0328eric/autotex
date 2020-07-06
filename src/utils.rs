@@ -105,14 +105,18 @@ fn get_pdf_viewer() -> error::Result<PathBuf> {
         dirs::config_dir().unwrap()
     };
     config_dir.push("autotex/config.yaml");
-    let contents = fs::read_to_string(config_dir).unwrap_or(String::new());
+    let contents = fs::read_to_string(config_dir).unwrap_or_default();
     let docs = YamlLoader::load_from_str(&contents)?;
     let doc = docs.get(0);
-    if doc.is_none() || doc.unwrap()["pdf"].is_badvalue() {
-        Ok(Path::new("xdg-open").to_path_buf())
+    if let Some(d) = doc {
+        if d["pdf"].is_badvalue() {
+            Ok(Path::new("xdg-open").to_path_buf())
+        } else {
+            let pdf_view = d["pdf"].as_str().unwrap();
+            Ok(Path::new(pdf_view).to_path_buf())
+        }
     } else {
-        let pdf_view = doc.unwrap()["pdf"].as_str().unwrap();
-        Ok(Path::new(pdf_view).to_path_buf())
+        Err(AutoTeXErr::ParsePdfErr)
     }
 }
 
