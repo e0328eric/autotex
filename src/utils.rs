@@ -75,14 +75,14 @@ pub fn get_files_info(filepath: &PathBuf) -> error::Result<TeXFileInfo> {
             Ok(dir) => {
                 // Filter out directories and files not related with TeX
                 let file_ext = dir.path().extension();
+                // Detect whether this is a file
+                // If this is a directory, then continue the loop
                 if let Some(ext) = file_ext {
                     if TEX_FILES_EXTENSIONS.iter().any(|x| OsStr::new(x) == ext) {
                         bibtex_exists = ext == "bib";
                         mkindex_exists = ext == "idx";
                         filenames.push(dir.into_path());
                     }
-                } else {
-                    return Err(AutoTeXErr::TakeFilesErr);
                 }
             }
             Err(_) => return Err(AutoTeXErr::TakeFilesErr),
