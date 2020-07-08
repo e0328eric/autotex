@@ -8,11 +8,7 @@ use yaml_rust::YamlLoader;
 
 use crate::error::{self, AutoTeXErr};
 
-// ============================
-// Structure
-// ============================
 // A container of files info
-#[derive(Debug)]
 pub struct TeXFileInfo {
     pub filenames: Vec<PathBuf>,
     pub mainfile: OsString,
@@ -21,15 +17,10 @@ pub struct TeXFileInfo {
     pub mkindex_exists: bool,
 }
 
-// ============================
-// Constants
-// ============================
 // TeX relative extensions
 const TEX_FILES_EXTENSIONS: [&str; 4] = ["tex", "bib", "idx", "toc"];
 
-// ============================
-// Implementation
-// ============================
+// Implementation of TeXFileInfo
 impl TeXFileInfo {
     pub fn take_time(&self) -> error::Result<Vec<SystemTime>> {
         let mut output: Vec<SystemTime> = vec![];
@@ -49,9 +40,6 @@ impl TeXFileInfo {
     }
 }
 
-// ============================
-// Functions
-// ============================
 // Take all tex related files in the current directory
 pub fn get_files_info(filepath: &PathBuf) -> error::Result<TeXFileInfo> {
     let mut filenames: Vec<PathBuf> = Vec::new();
@@ -98,6 +86,9 @@ pub fn get_files_info(filepath: &PathBuf) -> error::Result<TeXFileInfo> {
     })
 }
 
+// Get a pdf viewer from a config file
+// The config file must in at .config/autotex directory
+// and its name is config.yaml
 fn get_pdf_viewer() -> error::Result<PathBuf> {
     let mut config_dir = if dirs::config_dir().is_none() {
         return Err(AutoTeXErr::NoneError);
@@ -117,20 +108,5 @@ fn get_pdf_viewer() -> error::Result<PathBuf> {
         }
     } else {
         Err(AutoTeXErr::ParsePdfErr)
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn parse_yaml_in_config() {
-        let mut dir = dirs::config_dir().unwrap();
-        dir.push("autotex/config.yaml");
-        let cont = fs::read_to_string(dir).unwrap();
-        let doc = &YamlLoader::load_from_str(&cont).unwrap()[0];
-        let pdf_view = doc["pdf"].as_str().unwrap();
-        println!("{:?}", pdf_view);
     }
 }
