@@ -22,6 +22,15 @@ const TEX_FILES_EXTENSIONS: [&str; 4] = ["tex", "bib", "idx", "toc"];
 
 // Implementation of TeXFileInfo
 impl TeXFileInfo {
+    fn new() -> TeXFileInfo {
+        TeXFileInfo {
+            filenames: vec![],
+            mainfile: OsString::new(),
+            current_dir: Path::new("").to_path_buf(),
+            bibtex_exists: false,
+            mkindex_exists: false,
+        }
+    }
     pub fn take_time(&self) -> error::Result<Vec<SystemTime>> {
         let mut output: Vec<SystemTime> = vec![];
         let path_lst = self.filenames.clone();
@@ -42,23 +51,21 @@ impl TeXFileInfo {
 
 // Take all tex related files in the current directory
 pub fn get_files_info(filepath: &PathBuf) -> error::Result<TeXFileInfo> {
-    let mut filenames: Vec<PathBuf> = Vec::new();
-    let mut bibtex_exists = false;
-    let mut mkindex_exists = false;
-    let mainfile = if let Some(file) = filepath.file_stem() {
+    let mut output = TeXFileInfo::new();
+    output.mainfile = if let Some(file) = filepath.file_stem() {
         file.to_os_string()
     } else {
         return Err(AutoTeXErr::NoFilenameInputErr);
     };
     let file_dir = filepath.ancestors().nth(1);
-    let current_dir = if file_dir == Some(Path::new("")) {
+    output.current_dir = if file_dir == Some(Path::new("")) {
         Path::new(".").to_path_buf()
     } else if file_dir.is_some() {
         file_dir.unwrap().to_path_buf()
     } else {
         return Err(AutoTeXErr::NoFilenameInputErr);
     };
-    for path in walkdir::WalkDir::new(&current_dir) {
+    for path in walkdir::WalkDir::new(&output.current_dir) {
         match path {
             Ok(dir) => {
                 // Filter out directories and files not related with TeX
@@ -67,23 +74,17 @@ pub fn get_files_info(filepath: &PathBuf) -> error::Result<TeXFileInfo> {
                 // If this is a directory, then continue the loop
                 if let Some(ext) = file_ext {
                     if TEX_FILES_EXTENSIONS.iter().any(|x| OsStr::new(x) == ext) {
-                        bibtex_exists = ext == "bib";
-                        mkindex_exists = ext == "idx";
-                        filenames.push(dir.into_path());
+                        output.bibtex_exists = ext == "bib";
+                        output.mkindex_exists = ext == "idx";
+                        output.filenames.push(dir.into_path());
                     }
                 }
             }
             Err(_) => return Err(AutoTeXErr::TakeFilesErr),
         }
     }
-    filenames.sort();
-    Ok(TeXFileInfo {
-        filenames,
-        mainfile,
-        current_dir,
-        bibtex_exists,
-        mkindex_exists,
-    })
+    output.filenames.sort();
+    Ok(output)
 }
 
 // Get a pdf viewer from a config file

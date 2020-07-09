@@ -77,6 +77,10 @@ impl<E> TeXEngine<E>
 where
     E: Compilable,
 {
+    fn new(engine: E, is_tex: bool) -> TeXEngine<E> {
+        TeXEngine { engine, is_tex }
+    }
+
     // Main function of compiling TeX
     pub fn run_engine(&self, tex_info: &TeXFileInfo) -> error::Result<()> {
         let mut mainfile = tex_info.mainfile.clone();
@@ -142,26 +146,17 @@ fn read_config() -> error::Result<(usize, usize)> {
 }
 
 // Take an appropriate TeX engine from an option
-macro_rules! return_texengine {
-    ($engine: expr, $is_tex: expr) => {
-        Ok(TeXEngine {
-            engine: $engine,
-            is_tex: $is_tex,
-        })
-    };
-}
-
 pub fn take_engine<'a>(opts: &'a [&'a String]) -> error::Result<TeXEngine<&'a str>> {
     let default = read_config()?;
     match opts.len() {
-        0 => return_texengine!(ENGINES_LST[default.0], default.0 < 4),
+        0 => Ok(TeXEngine::new(ENGINES_LST[default.0], default.0 < 4)),
         1 => {
             let en = opts[0];
             if en == "-la" {
-                return_texengine!(ENGINES_LST[default.1], default.1 < 4)
+                Ok(TeXEngine::new(ENGINES_LST[default.1], default.1 < 4))
             } else {
                 match ENGINE_OPTIONS.iter().position(|&x| x == en) {
-                    Some(n) => return_texengine!(ENGINES_LST[n], true),
+                    Some(n) => Ok(TeXEngine::new(ENGINES_LST[n], true)),
                     None => Err(AutoTeXErr::InvalidOptionErr),
                 }
             }
@@ -172,7 +167,7 @@ pub fn take_engine<'a>(opts: &'a [&'a String]) -> error::Result<TeXEngine<&'a st
             } else if opts.contains(&&String::from("-la")) {
                 match opts.iter().find(|&x| x != &"-la") {
                     Some(en) => match ENGINE_OPTIONS.iter().position(|x| x == en) {
-                        Some(n) => return_texengine!(ENGINES_LST[n + 4], false),
+                        Some(n) => Ok(TeXEngine::new(ENGINES_LST[n + 4], false)),
                         None => Err(AutoTeXErr::InvalidOptionErr),
                     },
                     None => Err(AutoTeXErr::NoneError),
