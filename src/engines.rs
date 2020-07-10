@@ -77,8 +77,8 @@ impl<E> TeXEngine<E>
 where
     E: Compilable,
 {
-    fn new(engine: E, is_tex: bool) -> TeXEngine<E> {
-        TeXEngine { engine, is_tex }
+    fn new(engine: E, is_tex: bool) -> Self {
+        Self { engine, is_tex }
     }
 
     // Main function of compiling TeX

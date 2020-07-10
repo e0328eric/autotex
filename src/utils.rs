@@ -22,8 +22,8 @@ const TEX_FILES_EXTENSIONS: [&str; 4] = ["tex", "bib", "idx", "toc"];
 
 // Implementation of TeXFileInfo
 impl TeXFileInfo {
-    fn new() -> TeXFileInfo {
-        TeXFileInfo {
+    fn new() -> Self {
+        Self {
             filenames: vec![],
             mainfile: OsString::new(),
             current_dir: Path::new("").to_path_buf(),
