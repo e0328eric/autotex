@@ -1,8 +1,4 @@
-extern crate dirs;
-extern crate signal;
-extern crate walkdir;
-extern crate yaml_rust;
-
+#![warn(rust_2018_idioms)]
 mod engines;
 mod error;
 mod help;

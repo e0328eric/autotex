@@ -11,7 +11,7 @@ use crate::utils::TeXFileInfo;
 // Store TeX engine and some bool
 // so that the program detect whether compile engine is TeX or LaTeX based
 #[derive(Debug)]
-pub struct TeXEngine<E> {
+pub struct TeXEngine<E: Compilable> {
     engine: E,
     is_tex: bool,
 }

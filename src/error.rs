@@ -17,7 +17,7 @@ pub enum AutoTeXErr {
 }
 
 impl fmt::Display for AutoTeXErr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use AutoTeXErr::*;
         match *self {
             IOErr(ref e) => e.fmt(f),
