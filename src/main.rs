@@ -45,7 +45,10 @@ fn compile(filepath: &PathBuf, options: &[String]) -> error::Result<()> {
         let mut init_time = tex_info.take_time()?;
         let curr_dir = env::current_dir()?;
         let trap = Trap::trap(&[SIGINT]);
-        engine.run_engine(&tex_info)?;
+        let show_pdf = engine.run_engine(&tex_info)?;
+        if !show_pdf {
+            return Ok(());
+        }
         tex_info.run_pdf()?;
         thread::sleep(Duration::from_secs(1));
         env::set_current_dir(&curr_dir)?;

@@ -69,7 +69,7 @@ impl Compilable for TeXFileInfo {
 // Return a unit value if the tex engine is failed
 macro_rules! quit_if_failed {
     ($e: expr; $($es: expr),*) => {
-        if !$e.compile($($es,)*)? { return Ok(()); }
+        if !$e.compile($($es,)*)? { return Ok(false); }
     }
 }
 
@@ -82,7 +82,7 @@ where
     }
 
     // Main function of compiling TeX
-    pub fn run_engine(&self, tex_info: &TeXFileInfo) -> error::Result<()> {
+    pub fn run_engine(&self, tex_info: &TeXFileInfo) -> error::Result<bool> {
         let mut mainfile = tex_info.mainfile.clone();
         mainfile.push(".tex");
         env::set_current_dir(&tex_info.current_dir)?;
@@ -112,7 +112,7 @@ where
                 }
             }
         }
-        Ok(())
+        Ok(true)
     }
 }
 
