@@ -42,13 +42,18 @@ fn compile(filepath: &PathBuf, options: &[String]) -> error::Result<()> {
     // Check whether "-v" option is used.
     // If so, then run tex continuously.
     if options.contains(&CONTINUS_COMPILE_OPTION.to_string()) {
+        // First, collect the modification time for each files
+        // in the current directory and its childs.
         let mut init_time = tex_info.take_time()?;
+        // Then change the directory to compile.
         let curr_dir = env::current_dir()?;
         let trap = Trap::trap(&[SIGINT]);
+        // If it has an error while compile first, then exit whole program.
         let show_pdf = engine.run_engine(&tex_info)?;
         if !show_pdf {
             return Ok(());
         }
+        // If not, then show a pdf file.
         tex_info.run_pdf()?;
         thread::sleep(Duration::from_secs(1));
         env::set_current_dir(&curr_dir)?;
