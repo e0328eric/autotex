@@ -31,6 +31,7 @@ impl TeXFileInfo {
             mkindex_exists: false,
         }
     }
+
     pub fn take_time(&self) -> error::Result<Vec<SystemTime>> {
         let mut output: Vec<SystemTime> = vec![];
         let path_lst = self.filenames.clone();
@@ -57,6 +58,7 @@ pub fn get_files_info(filepath: &PathBuf) -> error::Result<TeXFileInfo> {
     } else {
         return Err(AutoTeXErr::NoFilenameInputErr);
     };
+
     let file_dir = filepath.ancestors().nth(1);
     output.current_dir = if file_dir == Some(Path::new("")) {
         Path::new(".").to_path_buf()
@@ -65,6 +67,7 @@ pub fn get_files_info(filepath: &PathBuf) -> error::Result<TeXFileInfo> {
     } else {
         return Err(AutoTeXErr::NoFilenameInputErr);
     };
+
     for path in walkdir::WalkDir::new(&output.current_dir) {
         match path {
             Ok(dir) => {
