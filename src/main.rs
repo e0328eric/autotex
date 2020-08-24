@@ -1,47 +1,26 @@
 #![warn(rust_2018_idioms)]
+mod commands;
+mod compilable;
 mod engines;
 mod error;
-mod help;
 mod utils;
 
+use crate::commands::AutoTeXCommand;
+use signal::trap::Trap;
+use signal::Signal::SIGINT;
 use std::env;
-use std::path::{Path, PathBuf};
 use std::thread;
 use std::time::{Duration, Instant};
 
-use signal::trap::Trap;
-use signal::Signal::SIGINT;
-
-use crate::error::AutoTeXErr;
-
-// continuous compile option
-const CONTINUS_COMPILE_OPTION: &str = "-v";
-const HELP_OPTION: &str = "--help";
-
 fn main() -> error::Result<()> {
-    let mut args = env::args().collect::<Vec<String>>()[1..].to_vec();
-    if args.is_empty() {
-        return Err(AutoTeXErr::TakeFilesErr);
-    }
-    if args.contains(&HELP_OPTION.to_string()) {
-        println!("{}", help::HELP_STRING);
-        Ok(())
-    } else {
-        let filename = Path::new(&args.pop().unwrap()).to_path_buf();
-        compile(&filename, &args)
-    }
+    let args = AutoTeXCommand::new()?;
+    run_autotex(args)
 }
 
-fn compile(filepath: &PathBuf, options: &[String]) -> error::Result<()> {
-    let tex_info = utils::get_files_info(&filepath)?;
-    let engines = &options
-        .iter()
-        .filter(|x| engines::ENGINE_OPTIONS.contains(&x.as_str()))
-        .collect::<Vec<_>>();
-    let engine = engines::take_engine(&engines)?;
-    // Check whether "-v" option is used.
-    // If so, then run tex continuously.
-    if options.contains(&CONTINUS_COMPILE_OPTION.to_string()) {
+fn run_autotex(args: AutoTeXCommand) -> error::Result<()> {
+    let tex_info = utils::get_files_info(&args.file_path)?;
+    let engine = engines::take_engine(&args.tex_engine)?;
+    if args.is_conti_compile {
         // First, collect the modification time for each files
         // in the current directory and its childs.
         let mut init_time = tex_info.take_time()?;
@@ -49,12 +28,14 @@ fn compile(filepath: &PathBuf, options: &[String]) -> error::Result<()> {
         let curr_dir = env::current_dir()?;
         let trap = Trap::trap(&[SIGINT]);
         // If it has an error while compile first, then exit whole program.
-        let show_pdf = engine.run_engine(&tex_info)?;
-        if !show_pdf {
+        let has_error_first = engine.run_engine(&tex_info)?;
+        if !has_error_first {
             return Ok(());
         }
-        // If not, then show a pdf file.
-        tex_info.run_pdf()?;
+        if args.is_view {
+            tex_info.run_pdf()?;
+        }
+        // If not, then show a pdf file if the view option is used
         thread::sleep(Duration::from_secs(1));
         env::set_current_dir(&curr_dir)?;
         println!("Press Ctrl+C to finish the program.");
@@ -69,8 +50,11 @@ fn compile(filepath: &PathBuf, options: &[String]) -> error::Result<()> {
             thread::sleep(Duration::from_secs(1));
         }
         println!("\nQuitting");
-    } else {
+    } else if !args.is_view {
         engine.run_engine(&tex_info)?;
+    } else {
+        env::set_current_dir(&tex_info.current_dir)?;
+        tex_info.run_pdf()?
     }
     Ok(())
 }
