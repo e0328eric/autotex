@@ -22,15 +22,20 @@ cargo install --path .
 
 ## Usage
 
-### Run Plain TeX
+### Run TeX Engines
 
-There are four options to run this program: `-plain`, `-pdf`, `-xe` and `-lua`. If you run
+Use `--engine` or `-e` option to specify TeX engines. For example, if you want to use plain TeX, type either
 
 ```bash
-autotex -plain testfile.tex
+autotex -e tex testfile.tex
+autotex --engine tex testfile.tex
+autotex -e plaintex testfile.tex
+autotex --engine plaintex testfile.tex
 ```
 
-in the folder that contains a file to be compiled, then TeX runs and make `testfile.dvi`. Options `-pdf`, `-xe` and `-lua` runs pdfTeX, XeTeX and LuaTeX engine, respectively.
+in the folder that contains a file to be compiled, then TeX runs and make `testfile.dvi`. 
+
+Option `--engine` can get `pdftex`, `xetex`, `luatex`, `tex`, `plaintex`, `pdflatex`, `xelatex`, `lualatex` and `latex`.
 
 If there is no options like
 
@@ -40,44 +45,30 @@ autotex testfile.tex
 
 then pdfTeX runs in default.
 
-### Run LaTeX
-
-The option `-la` makes to run LaTeX engines. For example,
-
-``` bash
-autotex -la -pdf testfile.tex
-```
-
-runs pdfLaTeX and
-
-``` bash
-autotex -la -plain testfile.tex
-```
-
-runs LaTeX and so on. Like plain TeX case, the only option `-la` makes pdfLaTeX run.
-
 ### Continuous Compiling
 
-#### The option `-v`
+#### The option `-c`
 
 Many people might want to run TeX engine continuously. This means that TeX engine runs if the compiled file is modified. There is an option what you want. If you run `autotex` like
 
 ``` bash
-autotex -v testfile.tex
+autotex -c testfile.tex
 ```
 
-then first, TeX engine runs (in this example, there is no engine options, so pdfTeX runs). After TeX engine is finished, pdf viewer is opened and `autotex` waits until the `testfile.tex` file is modified. If this file is modified, then TeX engine runs one more time.
+then TeX engine runs (in this example, there is no engine options, so pdfTeX runs) and autotex` waits until the `testfile.tex` file is modified. If this file is modified, then TeX engine runs one more time.
 
-If you want to do this with LuaLaTeX, then run like
+If you want to do this with LuaLaTeX, then run like either
 
 ``` bash
-autotex -v -la -lua testfile.tex
+autotex -e lualatex -c testfile.tex
 ```
 
 as we expected. Note that there is no order for options. So
 
 ``` bash
-autotex -lua -v -la testfile.tex
+autotex -c -e lualatex testfile.tex
+autotex -ce lualatex testfile.tex
+autotex -ec lualatex testfile.tex
 ```
 
 runs exactly same as in the previous example.
@@ -90,10 +81,8 @@ The example config is in below:
 ``` reStructuredText
 engine:
   main: pdflatex
-  latex: pdflatex
 pdf: zathura
 ```
 In general, the command `autotex FILENAME` runs pdftex in default. However, if the config file is like in above, it runs pdflatex in default.
-Also, `latex` part determines the default latex engine in which `autotex -la FILENAME` runs.
 `pdf` part gives the default pdf viewer. The default pdf viewer is `xdg-open`.
 
