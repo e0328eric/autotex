@@ -72,13 +72,13 @@ where
 }
 
 // Take an appropriate TeX engine from an option
-pub fn take_engine(engine: &String) -> error::Result<TeXEngine<String>> {
-    match engine.as_str() {
+pub fn take_engine(engine: &str) -> error::Result<TeXEngine<String>> {
+    match engine {
         "pdftex" | "xetex" | "luatex" | "tex" | "plaintex" => {
-            Ok(TeXEngine::new(engine.clone(), true))
+            Ok(TeXEngine::new(engine.to_string(), true))
         }
         "pdflatex" | "xelatex" | "lualatex" | "latex" | "plainlatex" => {
-            Ok(TeXEngine::new(engine.clone(), false))
+            Ok(TeXEngine::new(engine.to_string(), false))
         }
         _ => Err(AutoTeXErr::InvalidOptionErr),
     }

@@ -37,7 +37,7 @@ fn read_config() -> error::Result<String> {
     } else {
         "pdftex"
     };
-    Ok(main_engine.to_lowercase().to_string())
+    Ok(main_engine.to_lowercase())
 }
 
 #[derive(Debug, PartialEq)]
@@ -50,7 +50,7 @@ pub struct AutoTeXCommand {
 
 impl AutoTeXCommand {
     pub fn new() -> error::Result<Self> {
-        Self::new_from(std::env::args_os().into_iter())
+        Self::new_from(std::env::args_os())
     }
 
     fn new_from<I, T>(args: I) -> error::Result<Self>
@@ -145,12 +145,12 @@ impl AutoTeXCommand {
         let tex_engine = if matches.occurrences_of("ENGINE") == 0 {
             let engine = use_pdftex.to_string() + use_xetex + use_luatex + use_latex + "tex";
             if matches.occurrences_of("tex") == 0 && &engine == "tex" {
-                default_engine.clone()
+                default_engine
             } else {
-                engine.to_string()
+                engine
             }
         } else {
-            String::from(matches.value_of("ENGINE").unwrap().to_lowercase())
+            matches.value_of("ENGINE").unwrap().to_lowercase()
         };
         let is_conti_compile = matches.occurrences_of("autoCompile") > 0;
         let is_view = matches.occurrences_of("view") > 0;
