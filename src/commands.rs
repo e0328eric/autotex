@@ -9,6 +9,16 @@ use yaml_rust::YamlLoader;
 pub const TEX_ENGINES: [&str; 5] = ["pdftex", "xetex", "luatex", "tex", "plaintex"];
 pub const LATEX_ENGINES: [&str; 5] = ["pdflatex", "xelatex", "lualatex", "latex", "plainlatex"];
 
+macro_rules! define_tex_engine_var {
+    ($varname: ident, $matches: expr, $name: expr, $engine: expr) => {
+        let $varname = if $matches.occurrences_of($name) > 0 {
+            $engine
+        } else {
+            ""
+        };
+    };
+}
+
 // Read a config file and return the position of the given engine
 // The config file must in at .config/autotex directory
 // and its name is config.yaml
@@ -82,24 +92,66 @@ impl AutoTeXCommand {
             .help("Sets the input filename or filepath to use");
 
         // Declare which engines to compile
-        let engine_option = Arg::with_name("engine")
+        let engine_option = Arg::with_name("ENGINE")
             .long("engine")
             .short("e")
+            .conflicts_with_all(&["pdftex", "xetex", "luatex", "tex", "latex"])
             .takes_value(true)
             .number_of_values(1)
-            .default_value(&default_engine)
             .help("Declare the TeX engine to compile");
+
+        let pdftex = Arg::with_name("pdftex")
+            .short("p")
+            .conflicts_with_all(&["xetex", "luatex", "tex"])
+            .help("Compile with pdftex, can combine with -L");
+        let xetex = Arg::with_name("xetex")
+            .short("x")
+            .conflicts_with_all(&["pdftex", "luatex", "tex"])
+            .help("Compile with xetex, can combine with -L");
+        let luatex = Arg::with_name("luatex")
+            .short("l")
+            .conflicts_with_all(&["pdftex", "xetex", "tex"])
+            .help("Compile with luatex, can combine with -L");
+        let tex = Arg::with_name("tex")
+            .short("t")
+            .conflicts_with_all(&["pdftex", "xetex", "luatex", "latex"])
+            .help("Compile with tex");
+        let latex = Arg::with_name("latex")
+            .short("L")
+            .conflicts_with("tex")
+            .help("Compile with latex");
 
         // Extract the matches
         let matches = app
-            .arg(view_option)
-            .arg(auto_compile)
-            .arg(input_filepath)
-            .arg(engine_option)
+            .args(&[
+                view_option,
+                auto_compile,
+                input_filepath,
+                engine_option,
+                pdftex,
+                xetex,
+                luatex,
+                tex,
+                latex,
+            ])
             .get_matches_from(args);
 
+        define_tex_engine_var!(use_pdftex, matches, "pdftex", "pdf");
+        define_tex_engine_var!(use_xetex, matches, "xetex", "xe");
+        define_tex_engine_var!(use_luatex, matches, "luatex", "lua");
+        define_tex_engine_var!(use_latex, matches, "latex", "la");
+
         let file_path = PathBuf::from(matches.value_of("INPUT").unwrap());
-        let tex_engine = String::from(matches.value_of("engine").unwrap().to_lowercase());
+        let tex_engine = if matches.occurrences_of("ENGINE") == 0 {
+            let engine = use_pdftex.to_string() + use_xetex + use_luatex + use_latex + "tex";
+            if matches.occurrences_of("tex") == 0 && &engine == "tex" {
+                default_engine.clone()
+            } else {
+                engine.to_string()
+            }
+        } else {
+            String::from(matches.value_of("ENGINE").unwrap().to_lowercase())
+        };
         let is_conti_compile = matches.occurrences_of("autoCompile") > 0;
         let is_view = matches.occurrences_of("view") > 0;
 
