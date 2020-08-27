@@ -9,13 +9,24 @@ use yaml_rust::YamlLoader;
 pub const TEX_ENGINES: [&str; 5] = ["pdftex", "xetex", "luatex", "tex", "plaintex"];
 pub const LATEX_ENGINES: [&str; 5] = ["pdflatex", "xelatex", "lualatex", "latex", "plainlatex"];
 
+// Make macros to define options and variables easily
+// These macros use only defining tex engine related options and variables in here
 macro_rules! define_tex_engine_var {
-    ($varname: ident, $matches: expr, $name: expr, $engine: expr) => {
+    ($varname: ident := $matches: expr, $name: expr, $engine: expr) => {
         let $varname = if $matches.occurrences_of($name) > 0 {
             $engine
         } else {
             ""
         };
+    };
+}
+
+macro_rules! define_tex_engine_option {
+    ($optname: ident := $argname: expr, $short: expr, $conflit: expr, $help: expr) => {
+        let $optname = Arg::with_name($argname)
+            .short($short)
+            .conflicts_with_all($conflit)
+            .help($help);
     };
 }
 
@@ -100,26 +111,21 @@ impl AutoTeXCommand {
             .number_of_values(1)
             .help("Declare the TeX engine to compile");
 
-        let pdftex = Arg::with_name("pdftex")
-            .short("p")
-            .conflicts_with_all(&["xetex", "luatex", "tex"])
-            .help("Compile with pdftex, can combine with -L");
-        let xetex = Arg::with_name("xetex")
-            .short("x")
-            .conflicts_with_all(&["pdftex", "luatex", "tex"])
-            .help("Compile with xetex, can combine with -L");
-        let luatex = Arg::with_name("luatex")
-            .short("l")
-            .conflicts_with_all(&["pdftex", "xetex", "tex"])
-            .help("Compile with luatex, can combine with -L");
-        let tex = Arg::with_name("tex")
-            .short("t")
-            .conflicts_with_all(&["pdftex", "xetex", "luatex", "latex"])
-            .help("Compile with tex");
-        let latex = Arg::with_name("latex")
-            .short("L")
-            .conflicts_with("tex")
-            .help("Compile with latex");
+        define_tex_engine_option!(pdftex := "pdftex", "p", &["xetex", "luatex", "tex"],
+            "Compile with pdftex, can be combine with -L"
+        );
+        define_tex_engine_option!(xetex := "xetex", "x", &["pdftex", "luatex", "tex"],
+            "Compile with xetex, can be combine with -L"
+        );
+        define_tex_engine_option!(luatex := "luatex", "l", &["pdftex", "xetex", "tex"],
+            "Compile with luatex, can be combine with -L"
+        );
+        define_tex_engine_option!(tex := "tex", "t", &["pdftex", "xetex", "luatex", "latex"],
+            "Compile with tex"
+        );
+        define_tex_engine_option!(latex := "latex", "L", &["tex"],
+            "Compile with latex"
+        );
 
         // Extract the matches
         let matches = app
@@ -136,10 +142,10 @@ impl AutoTeXCommand {
             ])
             .get_matches_from(args);
 
-        define_tex_engine_var!(use_pdftex, matches, "pdftex", "pdf");
-        define_tex_engine_var!(use_xetex, matches, "xetex", "xe");
-        define_tex_engine_var!(use_luatex, matches, "luatex", "lua");
-        define_tex_engine_var!(use_latex, matches, "latex", "la");
+        define_tex_engine_var!(use_pdftex := matches, "pdftex", "pdf");
+        define_tex_engine_var!(use_xetex := matches, "xetex", "xe");
+        define_tex_engine_var!(use_luatex := matches, "luatex", "lua");
+        define_tex_engine_var!(use_latex := matches, "latex", "la");
 
         let file_path = PathBuf::from(matches.value_of("INPUT").unwrap());
         let tex_engine = if matches.occurrences_of("ENGINE") == 0 {
