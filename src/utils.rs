@@ -93,6 +93,12 @@ pub fn get_files_info(filepath: &PathBuf) -> error::Result<TeXFileInfo> {
 // Get a pdf viewer from a config file
 // The config file must in at .config/autotex directory
 // and its name is config.yaml
+#[cfg(target_os = "linux")]
+const DEFAULT_PDF_VIEW: &str = "xdg-open";
+
+#[cfg(target_os = "macos")]
+const DEFAULT_PDF_VIEW: &str = "open";
+
 fn get_pdf_viewer() -> error::Result<PathBuf> {
     let mut config_dir = if dirs::config_dir().is_none() {
         return Err(AutoTeXErr::NoneError);
@@ -105,7 +111,7 @@ fn get_pdf_viewer() -> error::Result<PathBuf> {
     let doc = docs.get(0);
     if let Some(d) = doc {
         if d["pdf"].is_badvalue() {
-            Ok(Path::new("xdg-open").to_path_buf())
+            Ok(Path::new(DEFAULT_PDF_VIEW).to_path_buf())
         } else {
             let pdf_view = d["pdf"].as_str().unwrap();
             Ok(Path::new(pdf_view).to_path_buf())

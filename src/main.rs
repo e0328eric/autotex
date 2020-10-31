@@ -6,11 +6,13 @@ mod error;
 mod utils;
 
 use crate::commands::AutoTeXCommand;
-use signal::trap::Trap;
-use signal::Signal::SIGINT;
 use std::env;
 use std::thread;
-use std::time::{Duration, Instant};
+use std::time::Duration;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
+
+use signal_hook::flag as signal_flag;
 
 fn main() -> error::Result<()> {
     let args = AutoTeXCommand::new()?;
@@ -26,7 +28,9 @@ fn run_autotex(args: AutoTeXCommand) -> error::Result<()> {
         let mut init_time = tex_info.take_time()?;
         // Then change the directory to compile.
         let curr_dir = env::current_dir()?;
-        let trap = Trap::trap(&[SIGINT]);
+        let trap = Arc::new(AtomicUsize::new(0));
+        const SIGINT: usize = signal_hook::SIGINT as usize;
+        signal_flag::register_usize(signal_hook::SIGINT, Arc::clone(&trap), SIGINT)?;
         // If it has an error while compile first, then exit whole program.
         let has_error_first = engine.run_engine(&tex_info)?;
         if !has_error_first {
@@ -39,7 +43,7 @@ fn run_autotex(args: AutoTeXCommand) -> error::Result<()> {
         thread::sleep(Duration::from_secs(1));
         env::set_current_dir(&curr_dir)?;
         println!("Press Ctrl+C to finish the program.");
-        while trap.wait(Instant::now()).is_none() {
+        while trap.load(Ordering::Relaxed) != SIGINT {
             let compare_time = tex_info.take_time()?;
             if init_time != compare_time {
                 engine.run_engine(&tex_info)?;
