@@ -112,13 +112,13 @@ impl AutoTeXCommand {
             .help("Declare the TeX engine to compile");
 
         define_tex_engine_option!(pdftex := "pdftex", "p", &["xetex", "luatex", "tex"],
-            "Compile with pdftex, can be combine with -L"
+            "Compile with pdftex, can be combined with -L"
         );
         define_tex_engine_option!(xetex := "xetex", "x", &["pdftex", "luatex", "tex"],
-            "Compile with xetex, can be combine with -L"
+            "Compile with xetex, can be combined with -L"
         );
         define_tex_engine_option!(luatex := "luatex", "l", &["pdftex", "xetex", "tex"],
-            "Compile with luatex, can be combine with -L"
+            "Compile with luatex, can be combined with -L"
         );
         define_tex_engine_option!(tex := "tex", "t", &["pdftex", "xetex", "luatex", "latex"],
             "Compile with tex"
