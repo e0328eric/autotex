@@ -7,10 +7,10 @@ mod utils;
 
 use crate::commands::AutoTeXCommand;
 use std::env;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
-use std::sync::Arc;
-use std::sync::atomic::{AtomicUsize, Ordering};
 
 use signal_hook::flag as signal_flag;
 
@@ -20,11 +20,11 @@ fn main() -> error::Result<()> {
 }
 
 fn run_autotex(args: AutoTeXCommand) -> error::Result<()> {
-    let tex_info = utils::get_files_info(&args.file_path)?;
+    let mut tex_info = utils::get_files_info(&args.file_path)?;
     let engine = engines::take_engine(&args.tex_engine)?;
     if args.is_conti_compile {
         // First, collect the modification time for each files
-        // in the current directory and its childs.
+        // in the current directory and its children.
         let mut init_time = tex_info.take_time()?;
         // Then change the directory to compile.
         let curr_dir = env::current_dir()?;
@@ -46,6 +46,7 @@ fn run_autotex(args: AutoTeXCommand) -> error::Result<()> {
         while trap.load(Ordering::Relaxed) != SIGINT {
             let compare_time = tex_info.take_time()?;
             if init_time != compare_time {
+                tex_info = utils::get_files_info(&args.file_path)?;
                 engine.run_engine(&tex_info)?;
                 env::set_current_dir(&curr_dir)?;
                 init_time = tex_info.take_time()?;

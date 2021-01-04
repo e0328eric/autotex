@@ -30,8 +30,8 @@ impl Compilable for TeXFileInfo {
             .filter(|x| x.extension() == Some(OsStr::new("idx")))
             .map(|x| x.file_name())
             .collect();
-        if only_idx.is_empty() {
-            Ok(true)
+        let idx_compiled = if only_idx.is_empty() {
+            true
         } else {
             let mut status: Vec<bool> = vec![];
             for file in only_idx {
@@ -40,7 +40,27 @@ impl Compilable for TeXFileInfo {
                     Some(ref f) => status.push("makeindex".compile(f)?),
                 }
             }
-            Ok(status.iter().all(|x| *x))
-        }
+            status.iter().all(|x| *x)
+        };
+
+        let only_asy: Vec<Option<&OsStr>> = self
+            .filenames
+            .iter()
+            .filter(|x| x.extension() == Some(OsStr::new("asy")))
+            .map(|x| x.file_name())
+            .collect();
+        let asy_compiled = if only_asy.is_empty() {
+            true
+        } else {
+            let mut status: Vec<bool> = vec![];
+            for file in only_asy {
+                match file {
+                    None => return Err(AutoTeXErr::NoneError),
+                    Some(ref f) => status.push("asy".compile(f)?),
+                }
+            }
+            status.iter().all(|x| *x)
+        };
+        Ok(idx_compiled && asy_compiled)
     }
 }

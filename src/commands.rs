@@ -57,6 +57,7 @@ pub struct AutoTeXCommand {
     pub tex_engine: String,
     pub is_conti_compile: bool,
     pub is_view: bool,
+    pub is_asymptote: bool,
 }
 
 impl AutoTeXCommand {
@@ -96,6 +97,11 @@ impl AutoTeXCommand {
             .short("c")
             .help("Compile TeX automatically");
 
+        let compile_asymptote = Arg::with_name("asymptote")
+            .long("asy")
+            .short("a")
+            .help("Compile Asymptote");
+
         // Take filepath
         let input_filepath = Arg::with_name("INPUT")
             .required(true)
@@ -132,6 +138,7 @@ impl AutoTeXCommand {
             .args(&[
                 view_option,
                 auto_compile,
+                compile_asymptote,
                 input_filepath,
                 engine_option,
                 pdftex,
@@ -160,12 +167,14 @@ impl AutoTeXCommand {
         };
         let is_conti_compile = matches.occurrences_of("autoCompile") > 0;
         let is_view = matches.occurrences_of("view") > 0;
+        let is_asymptote = matches.occurrences_of("asymptote") > 0;
 
         Ok(Self {
             file_path,
             tex_engine,
             is_conti_compile,
             is_view,
+            is_asymptote,
         })
     }
 }

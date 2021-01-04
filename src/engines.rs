@@ -38,14 +38,21 @@ where
 
     // Main function of compiling TeX
     pub fn run_engine(&self, tex_info: &TeXFileInfo) -> error::Result<bool> {
-        let mut mainfile = tex_info.mainfile.clone();
-        mainfile.push(".tex");
+        let mainfile = tex_info.get_main_tex_file();
         env::set_current_dir(&tex_info.current_dir)?;
         quit_if_failed!(self; &mainfile);
         if self.is_tex {
-            quit_if_failed!(self; &mainfile);
+            if tex_info.asymptote_exists {
+                quit_if_failed!(&tex_info; &"");
+                quit_if_failed!(self; &mainfile);
+            } else {
+                quit_if_failed!(self; &mainfile);
+            }
         } else {
-            match (tex_info.bibtex_exists, tex_info.mkindex_exists) {
+            match (
+                tex_info.bibtex_exists,
+                tex_info.mkindex_exists || tex_info.asymptote_exists,
+            ) {
                 (false, false) => {
                     quit_if_failed!(self; &mainfile);
                 }

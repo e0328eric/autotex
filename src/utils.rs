@@ -9,16 +9,18 @@ use yaml_rust::YamlLoader;
 use crate::error::{self, AutoTeXErr};
 
 // A container of files info
+#[derive(Debug)]
 pub struct TeXFileInfo {
     pub filenames: Vec<PathBuf>,
     pub mainfile: OsString,
     pub current_dir: PathBuf,
     pub bibtex_exists: bool,
     pub mkindex_exists: bool,
+    pub asymptote_exists: bool,
 }
 
 // TeX relative extensions
-const TEX_FILES_EXTENSIONS: [&str; 4] = ["tex", "bib", "idx", "toc"];
+const TEX_FILES_EXTENSIONS: [&str; 5] = ["tex", "bib", "idx", "toc", "asy"];
 
 // Implementation of TeXFileInfo
 impl TeXFileInfo {
@@ -29,6 +31,7 @@ impl TeXFileInfo {
             current_dir: Path::new("").to_path_buf(),
             bibtex_exists: false,
             mkindex_exists: false,
+            asymptote_exists: false,
         }
     }
 
@@ -47,6 +50,16 @@ impl TeXFileInfo {
         pdf_name.push(".pdf");
         Command::new(pdf_engine).arg(pdf_name).spawn()?;
         Ok(())
+    }
+
+    pub fn get_main_tex_file(&self) -> String {
+        [
+            self.mainfile
+                .to_str()
+                .expect("Cannot take a filename to compile"),
+            ".tex",
+        ]
+        .concat()
     }
 }
 
@@ -77,8 +90,15 @@ pub fn get_files_info(filepath: &PathBuf) -> error::Result<TeXFileInfo> {
                 // If this is a directory, then continue the loop
                 if let Some(ext) = file_ext {
                     if TEX_FILES_EXTENSIONS.iter().any(|x| OsStr::new(x) == ext) {
-                        output.bibtex_exists = ext == "bib";
-                        output.mkindex_exists = ext == "idx";
+                        if !output.bibtex_exists {
+                            output.bibtex_exists = ext == "bib";
+                        }
+                        if !output.mkindex_exists {
+                            output.mkindex_exists = ext == "idx";
+                        }
+                        if !output.asymptote_exists {
+                            output.asymptote_exists = ext == "asy";
+                        }
                         output.filenames.push(dir.into_path());
                     }
                 }

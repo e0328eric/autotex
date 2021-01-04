@@ -1,12 +1,12 @@
 [package]
 name = "autotex"
-version = "1.0.1"
+version = "1.0.2"
 authors = ["Sungbae Jeong <almagest0328@gmail.com>"]
 edition = "2018"
 
 [dependencies]
 walkdir = "2.3"
 dirs = "3.0"
-signal-hook = "0.1.16"
+signal-hook = "0.2.1"
 yaml-rust = "0.4"
 clap = "2.33"
