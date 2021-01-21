@@ -24,42 +24,40 @@ impl Compilable for String {
 
 impl Compilable for TeXFileInfo {
     fn compile<S: AsRef<OsStr>>(&self, _filename: &S) -> error::Result<bool> {
-        let only_idx: Vec<Option<&OsStr>> = self
+        let only_idx = self
             .filenames
             .iter()
             .filter(|x| x.extension() == Some(OsStr::new("idx")))
-            .map(|x| x.file_name())
-            .collect();
-        let idx_compiled = if only_idx.is_empty() {
+            .map(|x| x.file_name());
+        let idx_compiled = if only_idx.clone().count() == 0 {
             true
         } else {
-            let mut status: Vec<bool> = vec![];
+            let mut status = true;
             for file in only_idx {
                 match file {
                     None => return Err(AutoTeXErr::NoneError),
-                    Some(ref f) => status.push("makeindex".compile(f)?),
+                    Some(ref f) => status = status && "makeindex".compile(f)?,
                 }
             }
-            status.iter().all(|x| *x)
+            status
         };
 
-        let only_asy: Vec<Option<&OsStr>> = self
+        let only_asy = self
             .filenames
             .iter()
             .filter(|x| x.extension() == Some(OsStr::new("asy")))
-            .map(|x| x.file_name())
-            .collect();
-        let asy_compiled = if only_asy.is_empty() {
+            .map(|x| x.file_name());
+        let asy_compiled = if only_asy.clone().count() == 0 {
             true
         } else {
-            let mut status: Vec<bool> = vec![];
+            let mut status = true;
             for file in only_asy {
                 match file {
                     None => return Err(AutoTeXErr::NoneError),
-                    Some(ref f) => status.push("asy".compile(f)?),
+                    Some(ref f) => status = status && "asy".compile(f)?,
                 }
             }
-            status.iter().all(|x| *x)
+            status
         };
         Ok(idx_compiled && asy_compiled)
     }
