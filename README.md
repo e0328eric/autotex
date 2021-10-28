@@ -1,5 +1,3 @@
-**I will changed entire code into golang because I want to get a project written in go**
-
 # autotex Manual
 
 `autotex` is a linux program that runs TeX and LaTeX continuously. For simple example, when
