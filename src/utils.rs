@@ -137,6 +137,6 @@ fn get_pdf_viewer() -> error::Result<PathBuf> {
             Ok(Path::new(pdf_view).to_path_buf())
         }
     } else {
-        Err(AutoTeXErr::ParsePdfErr)
+        Ok(Path::new(DEFAULT_PDF_VIEW).to_path_buf())
     }
 }

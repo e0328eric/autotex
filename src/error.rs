@@ -9,7 +9,6 @@ pub enum AutoTeXErr {
     CommandErr(clap::Error),
     NoneError,
     NoFilenameInputErr,
-    ParsePdfErr,
     TakeFilesErr,
     InvalidOptionErr,
 }
@@ -23,7 +22,6 @@ impl fmt::Display for AutoTeXErr {
             CommandErr(ref e) => e.fmt(f),
             NoneError => write!(f, "NoneError"),
             NoFilenameInputErr => write!(f, "There is no filename to compile!"),
-            ParsePdfErr => write!(f, "Cannot take a pdf reader name!"),
             TakeFilesErr => write!(f, "Cannot make a list of tex relative files!"),
             InvalidOptionErr => write!(f, "No tex option is used!"),
         }
