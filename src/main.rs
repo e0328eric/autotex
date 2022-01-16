@@ -12,6 +12,7 @@ use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
+use signal_hook::consts::signal::SIGINT;
 use signal_hook::flag as signal_flag;
 
 fn main() -> error::Result<()> {
@@ -29,8 +30,7 @@ fn run_autotex(args: AutoTeXCommand) -> error::Result<()> {
         // Then change the directory to compile.
         let curr_dir = env::current_dir()?;
         let trap = Arc::new(AtomicUsize::new(0));
-        const SIGINT: usize = signal_hook::SIGINT as usize;
-        signal_flag::register_usize(signal_hook::SIGINT, Arc::clone(&trap), SIGINT)?;
+        signal_flag::register_usize(SIGINT, Arc::clone(&trap), SIGINT as usize)?;
         // If it has an error while compile first, then exit whole program.
         let has_error_first = engine.run_engine(&tex_info)?;
         if !has_error_first {
@@ -43,7 +43,7 @@ fn run_autotex(args: AutoTeXCommand) -> error::Result<()> {
         thread::sleep(Duration::from_secs(1));
         env::set_current_dir(&curr_dir)?;
         println!("Press Ctrl+C to finish the program.");
-        while trap.load(Ordering::Relaxed) != SIGINT {
+        while trap.load(Ordering::Relaxed) != SIGINT as usize {
             let compare_time = tex_info.take_time()?;
             if init_time != compare_time {
                 tex_info = utils::get_files_info(&args.file_path)?;

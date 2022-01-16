@@ -23,7 +23,7 @@ macro_rules! define_tex_engine_var {
 
 macro_rules! define_tex_engine_option {
     ($optname: ident := $argname: expr, $short: expr, $conflit: expr, $help: expr) => {
-        let $optname = Arg::with_name($argname)
+        let $optname = Arg::new($argname)
             .short($short)
             .conflicts_with_all($conflit)
             .help($help);
@@ -81,55 +81,55 @@ impl AutoTeXCommand {
 
         // Basic app information
         let app = App::new("autotex")
-            .version("1.0.0")
+            .version(env!("CARGO_PKG_VERSION"))
             .about("Compiles TeX or LaTeX continuously")
             .author("Sungbae Jeong");
 
         // Define the view command line option
-        let view_option = Arg::with_name("view")
+        let view_option = Arg::new("view")
             .long("view")
-            .short("v")
+            .short('v')
             .help("View pdf for given compiled TeX file");
 
         // Whether compile automatically
-        let auto_compile = Arg::with_name("autoCompile")
+        let auto_compile = Arg::new("autoCompile")
             .long("conti")
-            .short("c")
+            .short('c')
             .help("Compile TeX automatically");
 
-        let compile_asymptote = Arg::with_name("asymptote")
+        let compile_asymptote = Arg::new("asymptote")
             .long("asy")
-            .short("a")
+            .short('a')
             .help("Compile Asymptote");
 
         // Take filepath
-        let input_filepath = Arg::with_name("INPUT")
+        let input_filepath = Arg::new("INPUT")
             .required(true)
             .index(1)
             .help("Sets the input filename or filepath to use");
 
         // Declare which engines to compile
-        let engine_option = Arg::with_name("ENGINE")
+        let engine_option = Arg::new("ENGINE")
             .long("engine")
-            .short("e")
+            .short('e')
             .conflicts_with_all(&["pdftex", "xetex", "luatex", "tex", "latex"])
             .takes_value(true)
             .number_of_values(1)
             .help("Declare the TeX engine to compile");
 
-        define_tex_engine_option!(pdftex := "pdftex", "p", &["xetex", "luatex", "tex"],
+        define_tex_engine_option!(pdftex := "pdftex", 'p', &["xetex", "luatex", "tex"],
             "Compile with pdftex, can be combined with -L"
         );
-        define_tex_engine_option!(xetex := "xetex", "x", &["pdftex", "luatex", "tex"],
+        define_tex_engine_option!(xetex := "xetex", 'x', &["pdftex", "luatex", "tex"],
             "Compile with xetex, can be combined with -L"
         );
-        define_tex_engine_option!(luatex := "luatex", "l", &["pdftex", "xetex", "tex"],
+        define_tex_engine_option!(luatex := "luatex", 'l', &["pdftex", "xetex", "tex"],
             "Compile with luatex, can be combined with -L"
         );
-        define_tex_engine_option!(tex := "tex", "t", &["pdftex", "xetex", "luatex", "latex"],
+        define_tex_engine_option!(tex := "tex", 't', &["pdftex", "xetex", "luatex", "latex"],
             "Compile with tex"
         );
-        define_tex_engine_option!(latex := "latex", "L", &["tex"],
+        define_tex_engine_option!(latex := "latex", 'L', &["tex"],
             "Compile with latex"
         );
 

@@ -6,7 +6,8 @@ edition = "2018"
 
 [dependencies]
 walkdir = "2.3"
-dirs = "3.0"
-signal-hook = "0.2.1"
+dirs = "4.0"
+signal-hook = "0.3"
 yaml-rust = "0.4"
-clap = "2.33"
+clap = "3"
+
