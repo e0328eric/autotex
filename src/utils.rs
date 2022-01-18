@@ -20,7 +20,7 @@ pub struct TeXFileInfo {
 }
 
 // TeX relative extensions
-const TEX_FILES_EXTENSIONS: [&str; 5] = ["tex", "bib", "idx", "toc", "asy"];
+const TEX_FILES_EXTENSIONS: [&str; 4] = ["tex", "bib", "idx", "toc"];
 
 // Implementation of TeXFileInfo
 impl TeXFileInfo {
@@ -95,9 +95,6 @@ pub fn get_files_info(filepath: &PathBuf) -> error::Result<TeXFileInfo> {
                         }
                         if !output.mkindex_exists {
                             output.mkindex_exists = ext == "idx";
-                        }
-                        if !output.asymptote_exists {
-                            output.asymptote_exists = ext == "asy";
                         }
                         output.filenames.push(dir.into_path());
                     }
