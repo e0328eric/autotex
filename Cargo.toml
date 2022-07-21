@@ -1,6 +1,6 @@
 [package]
 name = "autotex"
-version = "1.1.0"
+version = "1.2.0"
 authors = ["Sungbae Jeong <almagest0328@gmail.com>"]
 edition = "2018"
 

@@ -61,6 +61,16 @@ impl TeXFileInfo {
         ]
         .concat()
     }
+
+    pub fn get_main_pdf_file(&self) -> String {
+        [
+            self.mainfile
+                .to_str()
+                .expect("Cannot take a filename to compile"),
+            ".pdf",
+        ]
+        .concat()
+    }
 }
 
 // Take all tex related files in the current directory
