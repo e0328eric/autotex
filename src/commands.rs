@@ -1,5 +1,5 @@
 use crate::error::{self, AutoTeXErr};
-use clap::{Arg, Command};
+use clap::{Arg, ArgAction, Command};
 use std::ffi::OsString;
 use std::fs;
 use std::path::PathBuf;
@@ -26,6 +26,7 @@ macro_rules! define_tex_engine_option {
         let $optname = Arg::new($argname)
             .short($short)
             .conflicts_with_all($conflit)
+            .action(ArgAction::SetFalse)
             .help($help);
     };
 }
@@ -87,13 +88,14 @@ impl AutoTeXCommand {
         // Define the view command line option
         let view_option = Arg::new("view")
             .long("view")
-            .short('v')
+            .action(ArgAction::SetFalse)
             .help("View pdf for given compiled TeX file");
 
         // Whether compile automatically
         let auto_compile = Arg::new("autoCompile")
             .long("conti")
             .short('c')
+            .action(ArgAction::SetFalse)
             .help("Compile TeX automatically");
 
         // Take filepath
