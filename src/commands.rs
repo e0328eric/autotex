@@ -1,5 +1,5 @@
 use crate::error::{self, AutoTeXErr};
-use clap::{App, Arg};
+use clap::{Arg, Command};
 use std::ffi::OsString;
 use std::fs;
 use std::path::PathBuf;
@@ -13,7 +13,7 @@ pub const LATEX_ENGINES: [&str; 5] = ["pdflatex", "xelatex", "lualatex", "latex"
 // These macros use only defining tex engine related options and variables in here
 macro_rules! define_tex_engine_var {
     ($varname: ident := $matches: expr, $name: expr, $engine: expr) => {
-        let $varname = if $matches.occurrences_of($name) > 0 {
+        let $varname = if $matches.get_count($name) > 0 {
             $engine
         } else {
             ""
@@ -79,7 +79,7 @@ impl AutoTeXCommand {
         };
 
         // Basic app information
-        let app = App::new("autotex")
+        let app = Command::new("autotex")
             .version(env!("CARGO_PKG_VERSION"))
             .about("Compiles TeX or LaTeX continuously")
             .author("Sungbae Jeong");
@@ -106,8 +106,8 @@ impl AutoTeXCommand {
         let engine_option = Arg::new("ENGINE")
             .long("engine")
             .short('e')
-            .conflicts_with_all(&["pdftex", "xetex", "luatex", "tex", "latex"])
-            .takes_value(true)
+            .conflicts_with_all(["pdftex", "xetex", "luatex", "tex", "latex"])
+            .num_args(1)
             .number_of_values(1)
             .help("Declare the TeX engine to compile");
 
@@ -147,19 +147,19 @@ impl AutoTeXCommand {
         define_tex_engine_var!(use_luatex := matches, "luatex", "lua");
         define_tex_engine_var!(use_latex := matches, "latex", "la");
 
-        let file_path = PathBuf::from(matches.value_of("INPUT").unwrap());
-        let tex_engine = if matches.occurrences_of("ENGINE") == 0 {
+        let file_path = PathBuf::from(matches.get_one::<&str>("INPUT").unwrap());
+        let tex_engine = if matches.get_count("ENGINE") == 0 {
             let engine = use_pdftex.to_string() + use_xetex + use_luatex + use_latex + "tex";
-            if matches.occurrences_of("tex") == 0 && &engine == "tex" {
+            if matches.get_count("tex") == 0 && &engine == "tex" {
                 default_engine
             } else {
                 engine
             }
         } else {
-            matches.value_of("ENGINE").unwrap().to_lowercase()
+            matches.get_one::<String>("ENGINE").unwrap().to_lowercase()
         };
-        let is_conti_compile = matches.occurrences_of("autoCompile") > 0;
-        let is_view = matches.occurrences_of("view") > 0;
+        let is_conti_compile = matches.get_count("autoCompile") > 0;
+        let is_view = matches.get_count("view") > 0;
 
         Ok(Self {
             file_path,

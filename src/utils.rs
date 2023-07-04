@@ -74,7 +74,7 @@ impl TeXFileInfo {
 }
 
 // Take all tex related files in the current directory
-pub fn get_files_info(filepath: &PathBuf) -> error::Result<TeXFileInfo> {
+pub fn get_files_info(filepath: &Path) -> error::Result<TeXFileInfo> {
     let mut output = TeXFileInfo::new();
     output.mainfile = if let Some(file) = filepath.file_stem() {
         file.to_os_string()

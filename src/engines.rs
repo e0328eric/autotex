@@ -43,7 +43,7 @@ where
         quit_if_failed!(self; &mainfile);
         if self.is_tex {
             if tex_info.asymptote_exists {
-                quit_if_failed!(&tex_info; &"");
+                quit_if_failed!(tex_info; &"");
                 quit_if_failed!(self; &mainfile);
             } else {
                 quit_if_failed!(self; &mainfile);
@@ -62,13 +62,13 @@ where
                     quit_if_failed!(self; &mainfile);
                 }
                 (false, true) => {
-                    quit_if_failed!(&tex_info; &"");
+                    quit_if_failed!(tex_info; &"");
                     quit_if_failed!(self; &mainfile);
                     quit_if_failed!(self; &mainfile);
                 }
                 (true, true) => {
                     quit_if_failed!("bibtex"; &tex_info.mainfile);
-                    quit_if_failed!(&tex_info; &"");
+                    quit_if_failed!(tex_info; &"");
                     quit_if_failed!(self; &mainfile);
                     quit_if_failed!(self; &mainfile);
                 }
