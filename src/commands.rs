@@ -13,7 +13,7 @@ pub const LATEX_ENGINES: [&str; 5] = ["pdflatex", "xelatex", "lualatex", "latex"
 // These macros use only defining tex engine related options and variables in here
 macro_rules! define_tex_engine_var {
     ($varname: ident := $matches: expr, $name: expr, $engine: expr) => {
-        let $varname = if $matches.get_count($name) > 0 {
+        let $varname = if $matches.get_flag($name) {
             $engine
         } else {
             ""
@@ -26,7 +26,7 @@ macro_rules! define_tex_engine_option {
         let $optname = Arg::new($argname)
             .short($short)
             .conflicts_with_all($conflit)
-            .action(ArgAction::SetFalse)
+            .action(ArgAction::SetTrue)
             .help($help);
     };
 }
@@ -88,14 +88,14 @@ impl AutoTeXCommand {
         // Define the view command line option
         let view_option = Arg::new("view")
             .long("view")
-            .action(ArgAction::SetFalse)
+            .action(ArgAction::SetTrue)
             .help("View pdf for given compiled TeX file");
 
         // Whether compile automatically
         let auto_compile = Arg::new("autoCompile")
             .long("conti")
             .short('c')
-            .action(ArgAction::SetFalse)
+            .action(ArgAction::SetTrue)
             .help("Compile TeX automatically");
 
         // Take filepath
@@ -108,9 +108,9 @@ impl AutoTeXCommand {
         let engine_option = Arg::new("ENGINE")
             .long("engine")
             .short('e')
+            .action(ArgAction::Set)
             .conflicts_with_all(["pdftex", "xetex", "luatex", "tex", "latex"])
             .num_args(1)
-            .number_of_values(1)
             .help("Declare the TeX engine to compile");
 
         define_tex_engine_option!(pdftex := "pdftex", 'p', &["xetex", "luatex", "tex"],
@@ -149,19 +149,19 @@ impl AutoTeXCommand {
         define_tex_engine_var!(use_luatex := matches, "luatex", "lua");
         define_tex_engine_var!(use_latex := matches, "latex", "la");
 
-        let file_path = PathBuf::from(matches.get_one::<&str>("INPUT").unwrap());
-        let tex_engine = if matches.get_count("ENGINE") == 0 {
+        let file_path = PathBuf::from(matches.get_one::<String>("INPUT").unwrap());
+        let tex_engine = if let Some(engine) = matches.get_one::<String>("ENGINE") {
+            engine.to_lowercase()
+        } else {
             let engine = use_pdftex.to_string() + use_xetex + use_luatex + use_latex + "tex";
-            if matches.get_count("tex") == 0 && &engine == "tex" {
+            if !matches.get_flag("tex") && &engine == "tex" {
                 default_engine
             } else {
                 engine
             }
-        } else {
-            matches.get_one::<String>("ENGINE").unwrap().to_lowercase()
         };
-        let is_conti_compile = matches.get_count("autoCompile") > 0;
-        let is_view = matches.get_count("view") > 0;
+        let is_conti_compile = matches.get_flag("autoCompile");
+        let is_view = matches.get_flag("view");
 
         Ok(Self {
             file_path,
