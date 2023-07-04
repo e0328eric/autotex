@@ -88,6 +88,7 @@ impl AutoTeXCommand {
         // Define the view command line option
         let view_option = Arg::new("view")
             .long("view")
+            .short('v')
             .action(ArgAction::SetTrue)
             .help("View pdf for given compiled TeX file");
 
