@@ -1,5 +1,5 @@
 use crate::error::{self, AutoTeXErr};
-use crate::utils::TeXFileInfo;
+use crate::texfile_info::TeXFileInfo;
 use std::ffi::OsStr;
 use std::process::Command;
 

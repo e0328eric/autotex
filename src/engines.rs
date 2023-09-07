@@ -1,6 +1,6 @@
 use crate::compilable::Compilable;
 use crate::error::{self, AutoTeXErr};
-use crate::utils::TeXFileInfo;
+use crate::texfile_info::TeXFileInfo;
 use std::env;
 use std::ffi::OsStr;
 

@@ -1,13 +1,13 @@
 [package]
 name = "autotex"
 description = "Continuously compile TeX and LaTeX "
-version = "1.2.2"
+version = "1.2.3"
 authors = ["Sungbae Jeong <almagest0328@gmail.com>"]
 license = "MIT"
 edition = "2018"
 
 [dependencies]
-walkdir = "2.3"
+walkdir = "2.4"
 dirs = "5.0"
 signal-hook = "0.3"
 yaml-rust = "0.4"

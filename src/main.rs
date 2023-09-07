@@ -3,15 +3,15 @@ mod commands;
 mod compilable;
 mod engines;
 mod error;
-mod utils;
+mod texfile_info;
 
 use crate::commands::AutoTeXCommand;
-use std::env;
 use std::io::ErrorKind;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
+use std::{env, io};
 
 use signal_hook::consts::signal::SIGINT;
 use signal_hook::flag as signal_flag;
@@ -22,7 +22,7 @@ fn main() -> error::Result<()> {
 }
 
 fn run_autotex(args: AutoTeXCommand) -> error::Result<()> {
-    let mut tex_info = utils::get_files_info(&args.file_path)?;
+    let mut tex_info = texfile_info::get_files_info(&args.file_path)?;
     let engine = engines::take_engine(&args.tex_engine)?;
     if args.is_conti_compile {
         // First, collect the modification time for each files
@@ -50,8 +50,12 @@ fn run_autotex(args: AutoTeXCommand) -> error::Result<()> {
         while trap.load(Ordering::Relaxed) != SIGINT as usize {
             let compare_time = tex_info.take_time()?;
             if init_time != compare_time {
-                tex_info = utils::get_files_info(&args.file_path)?;
-                std::fs::remove_file(tex_info.get_main_pdf_file())?;
+                tex_info = texfile_info::get_files_info(&args.file_path)?;
+                match std::fs::remove_file(tex_info.get_main_pdf_file()) {
+                    Ok(()) => {}
+                    Err(err) if err.kind() == io::ErrorKind::NotFound => {}
+                    Err(err) => return Err(error::AutoTeXErr::IOErr(err)),
+                }
                 engine.run_engine(&tex_info)?;
                 env::set_current_dir(&curr_dir)?;
                 init_time = tex_info.take_time()?;
