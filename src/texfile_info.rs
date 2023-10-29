@@ -1,8 +1,13 @@
 use std::ffi::{OsStr, OsString};
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 use std::time::SystemTime;
+
+#[cfg(not(windows))]
+use std::process::Command;
+
+#[cfg(windows)]
+use powershell_script as ps;
 
 use yaml_rust::YamlLoader;
 
@@ -44,19 +49,35 @@ impl TeXFileInfo {
         Ok(output)
     }
 
-    #[cfg(not(target_os = "windows"))]
-    pub fn run_pdf(&self) -> error::Result<()> {
+    #[cfg(not(windows))]
+    pub fn show_pdf(&self) -> error::Result<()> {
         let pdf_engine = get_pdf_viewer()?;
         let mut pdf_name = self.mainfile.clone();
         pdf_name.push(".pdf");
+
         Command::new(pdf_engine).arg(pdf_name).spawn()?;
         Ok(())
     }
-    
-    // TODO: Implement get_odf_viewer for windows
-    #[cfg(target_os = "windows")]
-    pub fn run_pdf(&self) -> error::Result<()> {
-        Ok(())
+
+    #[cfg(windows)]
+    pub fn show_pdf(&self) -> error::Result<()> {
+        let pdf_engine = get_pdf_viewer()?;
+        let mut pdf_name = self.mainfile.clone();
+        pdf_name.push(".pdf");
+
+        let ps_cmd = format!(
+            "{} {}",
+            pdf_engine.display(),
+            pdf_name
+                .into_string()
+                .expect("cannot convert this into `String`")
+        );
+
+        if ps::run(&ps_cmd).is_err() {
+            Err(AutoTeXErr::CannotShowPdfErr)
+        } else {
+            Ok(())
+        }
     }
 
     pub fn get_main_tex_file(&self) -> String {
@@ -133,7 +154,9 @@ const DEFAULT_PDF_VIEW: &str = "xdg-open";
 #[cfg(target_os = "macos")]
 const DEFAULT_PDF_VIEW: &str = "open";
 
-#[cfg(not(target_os = "windows"))]
+#[cfg(target_os = "windows")]
+const DEFAULT_PDF_VIEW: &str = "ii";
+
 fn get_pdf_viewer() -> error::Result<PathBuf> {
     let mut config_dir = if dirs::config_dir().is_none() {
         return Err(AutoTeXErr::NoneError);
@@ -154,10 +177,4 @@ fn get_pdf_viewer() -> error::Result<PathBuf> {
     } else {
         Ok(Path::new(DEFAULT_PDF_VIEW).to_path_buf())
     }
-}
-
-// TODO: Implement get_odf_viewer for windows
-#[cfg(target_os = "windows")]
-fn get_pdf_viewer() {
-    eprintln!("[NOTE]: get_pdf_viewer is not supported yet in Windows");
 }

@@ -40,7 +40,7 @@ fn run_autotex(args: AutoTeXCommand) -> error::Result<()> {
             return Ok(());
         }
         if args.is_view {
-            tex_info.run_pdf()?;
+            tex_info.show_pdf()?;
         }
 
         // If not, then show a pdf file if the view option is used
@@ -72,7 +72,7 @@ fn run_autotex(args: AutoTeXCommand) -> error::Result<()> {
         engine.run_engine(&tex_info)?;
     } else {
         env::set_current_dir(&tex_info.current_dir)?;
-        tex_info.run_pdf()?
+        tex_info.show_pdf()?
     }
     Ok(())
 }

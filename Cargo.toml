@@ -12,3 +12,6 @@ dirs = "5.0"
 signal-hook = "0.3"
 yaml-rust = "0.4"
 clap = "4"
+
+[target."cfg(windows)".dependencies]
+powershell_script = "1.1.0"
