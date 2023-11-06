@@ -104,6 +104,7 @@ impl TeXFileInfo {
 // Take all tex related files in the current directory
 pub fn get_files_info(filepath: &Path) -> error::Result<TeXFileInfo> {
     let mut output = TeXFileInfo::new();
+
     output.mainfile = if let Some(file) = filepath.file_stem() {
         file.to_os_string()
     } else {
@@ -126,6 +127,11 @@ pub fn get_files_info(filepath: &Path) -> error::Result<TeXFileInfo> {
                 let file_ext = dir.path().extension();
                 // Detect whether this is a file
                 // If this is a directory, then continue the loop
+
+                // FIXME: Because of this part, if there are several tex files and
+                // if the only one of which requires "bib" file, then the others
+                // should have "bib" file, otherwise it does not compile continuously
+                // properly.
                 if let Some(ext) = file_ext {
                     if TEX_FILES_EXTENSIONS.iter().any(|x| OsStr::new(x) == ext) {
                         if !output.bibtex_exists {
