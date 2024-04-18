@@ -58,6 +58,7 @@ pub struct AutoTeXCommand {
     pub tex_engine: String,
     pub is_conti_compile: bool,
     pub is_view: bool,
+    pub is_remove_aux: bool,
 }
 
 impl AutoTeXCommand {
@@ -91,6 +92,13 @@ impl AutoTeXCommand {
             .short('v')
             .action(ArgAction::SetTrue)
             .help("View pdf for given compiled TeX file");
+
+        // Remove auxiliary files
+        let remove_auxiliary = Arg::new("removeAuxiliary")
+            .long("remove_aux")
+            .short('R')
+            .action(ArgAction::SetTrue)
+            .help("Remove auxiliary files in the current directory");
 
         // Whether compile automatically
         let auto_compile = Arg::new("autoCompile")
@@ -135,6 +143,7 @@ impl AutoTeXCommand {
             .args(&[
                 view_option,
                 auto_compile,
+                remove_auxiliary,
                 input_filepath,
                 engine_option,
                 pdftex,
@@ -163,12 +172,14 @@ impl AutoTeXCommand {
         };
         let is_conti_compile = matches.get_flag("autoCompile");
         let is_view = matches.get_flag("view");
+        let is_remove_aux = matches.get_flag("removeAuxiliary");
 
         Ok(Self {
             file_path,
             tex_engine,
             is_conti_compile,
             is_view,
+            is_remove_aux,
         })
     }
 }
