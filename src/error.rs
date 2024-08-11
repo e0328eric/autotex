@@ -10,6 +10,7 @@ pub enum AutoTeXErr {
     NoneError,
     NoFilenameInputErr,
     TakeFilesErr,
+    CannotShowPdfErr,
     InvalidOptionErr,
 }
 
@@ -23,6 +24,7 @@ impl fmt::Display for AutoTeXErr {
             NoneError => write!(f, "NoneError"),
             NoFilenameInputErr => write!(f, "There is no filename to compile"),
             TakeFilesErr => write!(f, "Cannot make a list of tex relative files"),
+            CannotShowPdfErr => write!(f, "Cannot show pdf"),
             InvalidOptionErr => write!(f, "No tex option is used"),
         }
     }
